@@ -1,0 +1,15 @@
+Origin :  https://mrbinggrae.tistory.com/266
+
+**** 기존에 있는 Rotation이 사라지면서 LocalTransform으로 대체를 했지만...
+		값은 변하는데 , 엔티티가 추가 되지않았다며...
+
+A component with type:Unity.Transforms.LocalTransform has not been added to the entity.
+ Entities Journaling may be able to help determine more information.
+ Please enable Entities Journaling for a more helpful error message.
+		
+	
+	왜 오류에서 MoveToPosition이 뜨지?? (40줄 TestReachedTargetPosition() 안)
+	..... 이젠 존재하지 않는 파일에서 오류(오류 뜨길래 압축후 제거)
+	
+	
+	음.... LocalTransform 문제인가??

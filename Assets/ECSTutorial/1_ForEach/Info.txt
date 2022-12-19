@@ -1,0 +1,8 @@
+Origin :  https://mrbinggrae.tistory.com/263
+
+버전이 달라 생기는 문제 제거 
+
+서브씬에서 배치
+Time.deltatime >> SystemAPI.Time.deltatime
+주석 설명추가
+ConvertToEntity 가 없어 RotationSpeed_ForEachAuthoring를 직접 구현

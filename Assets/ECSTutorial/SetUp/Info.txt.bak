@@ -1,0 +1,11 @@
+Origin : https://youtu.be/H7zAORa3Ux0
+
+*** MovingISystem에서 Job을 돌리며 생기는 문제는 모르겠음
+
+Fixed Error , Warning Message
+
+Error : Not Found GetSingleton<T>() in OtherScean (4) ==> Add HasSingleton<T>()
+
+Error (CS0282) : partial 구조체 여러 선언에서 필드간 순서 미정의 
+		=> [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+			추가		
