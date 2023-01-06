@@ -41,6 +41,8 @@ public partial class RotationSpeedSystem_IJobEntity : SystemBase
         // 구조체 생성 후 실행 예약
         new RotateEntityJob { DeltaTime = SystemAPI.Time.DeltaTime }.ScheduleParallel(query);
 
+        this.Enabled = query.CalculateEntityCount() > 0;
+
         // 메모리 할당 해제
         //test.Dispose();
     }

@@ -1,0 +1,7 @@
+1 ~ 6 튜토리얼은 
+https://mrbinggrae.tistory.com/category/Unity%20DOTS/ECS%20Sample%20Projtect
+이걸보고 버전이 달라 생기는 문제 수정
+
+7 ~  튜토리얼은
+https://www.youtube.com/playlist?list=PLgYNYeZLALscmRpPW5UCy2K10L2HHj7aX
+보고 진행

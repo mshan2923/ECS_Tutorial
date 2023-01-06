@@ -34,8 +34,9 @@ public partial class SpawnerSystem_SpawnRemove : SystemBase
             .WithBurst(FloatMode.Default, FloatPrecision.Standard, true)
             .ForEach((Entity entity, int entityInQueryIndex, in Spawner_SpawnRemover spawner, in LocalToWorld location) =>
             {
+                // ref 쓰기허용 , in 읽기전용 
                 var random = new Random(1);
-
+                Debug.Log("Spawning");
                 for (var x = 0; x < spawner.CountX; x++)
                 {
                     for (var y = 0; y < spawner.CountY; y++)

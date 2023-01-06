@@ -6,18 +6,34 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using Unity.Burst;
 
+//UpdateInGroup은 해당 시스템이 어떤그룹에 속하는지 설정 , 기본값  SimulationSystemGroup
+//확인은 Systems 탭에서 / UpdateInGroup, UpdateBefore, UpdateAfter, DisableAutoCreation 존재
+//[UpdateInGroup(typeof(SimulationSystemGroup))]
 public partial class PhysicsSpawnerSystem : SystemBase
 {
     private BeginInitializationEntityCommandBufferSystem entityCommandBufferSystem;
+
+    FixedStepSimulationSystemGroup FixedSystem;
 
     protected override void OnCreate()
     {
         base.OnCreate();
 
         entityCommandBufferSystem = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>();
+        FixedSystem = World.GetExistingSystemManaged<FixedStepSimulationSystemGroup>();
+
+        //      FixedStepSimulationSystemGroup 만 RateManager 유효한가?
+
+        //Debug.Log("Fixed Time : " + World.GetExistingSystemManaged<FixedStepSimulationSystemGroup>().RateManager.Timestep);
+        //World.GetExistingSystemManaged<FixedStepSimulationSystemGroup>().RateManager.Timestep = 0.05f;
     }
     protected override void OnUpdate()
     {
+        //Debug.Log("Delta : " + SystemAPI.Time.DeltaTime + " / ECS FixedTime : " + Mathf.Max(SystemAPI.Time.DeltaTime * 5,  0.01666667f));
+
+        FixedSystem.RateManager.Timestep = Mathf.Max(SystemAPI.Time.DeltaTime * 5,  0.01666667f);
+        //--------------- PhysicsStep.SolverIterationCont 가 1이면 오히려 겹침상태가 오래 지속되 성능저하
+
         {
             var commandBuffer = entityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter();
 
@@ -32,10 +48,13 @@ public partial class PhysicsSpawnerSystem : SystemBase
                     {
                         for (int l = 0; l < Cspanwer.spawnSize.y; l++)
                         {
-                            if (l != 0 && w != 0 && l != Cspanwer.spawnSize.y - 1 && w != Cspanwer.spawnSize.x - 1)
+                            if (Cspanwer.ishollow)
                             {
-                                //Skip to the next values
-                                continue;
+                                if (l != 0 && w != 0 && l != Cspanwer.spawnSize.y - 1 && w != Cspanwer.spawnSize.x - 1)
+                                {
+                                    //Skip to the next values
+                                    continue;
+                                }
                             }
 
                             //var instance = commandBuffer.Instantiate(entityInQueryIndex, spawner.Prefab);
@@ -44,7 +63,7 @@ public partial class PhysicsSpawnerSystem : SystemBase
                             commandBuffer.SetComponent
                                 (entityInQueryIndex, instance, new LocalTransform
                                 {
-                                    Position = new float3(h, l + 0.5f, w) + Cspanwer.offset,
+                                    Position = new float3(h, l, w) * 1.1f + Cspanwer.offset + new float3(0, 0.5f, 0),
                                     Rotation = quaternion.identity,
                                     Scale = 1
                                 }

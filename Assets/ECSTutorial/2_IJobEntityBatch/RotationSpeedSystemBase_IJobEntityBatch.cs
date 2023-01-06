@@ -128,5 +128,7 @@ public partial class RotationSpeedSystemBase_IJobEntityBatch : SystemBase
 
         //NativeArray<LocalTransform> list_Lt = new NativeArray<LocalTransform>(m_Query.CalculateEntityCount(), Allocator.TempJob);
         //m_Query.CopyFromComponentDataArray<LocalTransform>(list_Lt);//------------이걸쓰니 사라지넼ㅋㅋㅋ 시발 
+
+        this.Enabled = m_Query.CalculateEntityCount() > 0;
     }
 }

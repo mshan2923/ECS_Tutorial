@@ -48,8 +48,7 @@ public partial class SpawnerSystem : SystemBase
     {
         // WithStructuralChanges 버스트를 비활성하여 함수 내에서 엔티티 데이터를 구조적으로 변경할 수 있게 해준다.
         // WithStructuralChanges 보단 EntityCommandBuffer를 사용하는 것이 성능상 더 좋다. 
-        Entities.WithStructuralChanges().ForEach((Entity entity, int entityInQueryIndex,
-            in Spawner spawnerFromEntity, in LocalToWorld spawnerLocalToWorld) =>
+        Entities.WithStructuralChanges().ForEach((Entity entity, int entityInQueryIndex, in tutorial.Spawner spawnerFromEntity, in LocalToWorld spawnerLocalToWorld) =>
         {
                 // Job 이 끝날때까지 메인쓰레드가 대기한다. (멀티스레드에서 작동하므로 비동기)
                 Dependency.Complete();
