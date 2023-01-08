@@ -8,7 +8,10 @@ public partial class TestSingtonSystem : SystemBase
     protected override void OnUpdate()
     {
         if (CameraController.instance == null)
+        {
             this.Enabled = false;
+            return;
+        }
 
         {
             if (Input.GetKey(KeyCode.W))

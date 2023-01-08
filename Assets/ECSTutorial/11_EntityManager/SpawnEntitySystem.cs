@@ -16,7 +16,13 @@ namespace Tutorial.EntityManager
         // 4번 튜토는  11 + 12 튜토리얼 합한거
         //  생성할 Entity를 예약해둬 병렬로 처리하는게 4번 튜토리얼
 
+        if (! SystemAPI.HasSingleton<EntitySpawnComponent>())
+        {
+            this.Enabled = false;
+            return;
+        }
         var spawnData = SystemAPI.GetSingleton<EntitySpawnComponent>();
+
         gridSize = spawnData.spawnGrid;
         spacing = spawnData.spacing;
 
