@@ -1,0 +1,6 @@
+SelectSystem.CreateDebugCollider()이 충돌이벤트가 되야되는데
+도무지 될 생각이 없나봄...
+
+
+Dot , 거리로 대상을 선별하는방법으로 대채할 순 있지만 
+....
