@@ -18,7 +18,7 @@ namespace Tutorial.GerateMesh
         protected override void OnUpdate()
         {
             Entities
-                //.WithAll<ChangeMeshTag>()
+                .WithAll<ChangeMeshTag>()
                 .WithStructuralChanges()
                 .ForEach((Entity e, in Unity.Rendering.RenderMeshArray render) => 
                 {

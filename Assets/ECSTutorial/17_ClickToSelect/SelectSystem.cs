@@ -29,6 +29,9 @@ namespace Tutorial.ClickToSelect
 
         protected override void OnStartRunning()
         {
+            this.Enabled = false;
+            return;
+            
             camera = Camera.main;
             selectionArchetype = EntityManager.CreateArchetype(typeof(PhysicsCollider), typeof(SelectionColliderTag), typeof(PhysicsWorldIndex), typeof(WorldTransform));
             //LocalToWorld 때문에 'The UNKNOWN_OBJECT_TYPE has been deallocated' 발생
@@ -262,6 +265,8 @@ namespace Tutorial.ClickToSelect
 
             Debug.Log("Collider : "  + EntityManager.GetComponentData<PhysicsCollider>(SelecterEntity).Value.Value.CalculateAabb().Min + " ~ " 
             + EntityManager.GetComponentData<PhysicsCollider>(SelecterEntity).Value.Value.CalculateAabb().Max);
+
+            Debug.Log("Shape :" + EntityManager.GetComponentData<PhysicsCollider>(SelecterEntity).Value.Value.GetCollisionResponse());
         }
 
         Entity DeselectUnit()

@@ -5,3 +5,5 @@ https://mrbinggrae.tistory.com/category/Unity%20DOTS/ECS%20Sample%20Projtect
 7 ~  튜토리얼은
 https://www.youtube.com/playlist?list=PLgYNYeZLALscmRpPW5UCy2K10L2HHj7aX
 보고 진행
+
+17,18은 ....하.. 안됨

@@ -1,0 +1,2 @@
+ECS는 안됨 (Entities.Foreach() 가 외부의 로컬함수 접근X)
+ECSJob은 IJobForEachWithEntity 가 없어져서... 안됨

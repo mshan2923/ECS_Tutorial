@@ -1,0 +1,14 @@
+IJobForEachWithEntity<> 이 흔적도 없이 제거되서...
+
+A지점에 정렬된 상태로 스폰되고 B지점으로 이동
+전부 도착후 다시 A지점으로 이동
+
+TestGroupSystem은 고유인덱스 설정 테스트
+
+GC가 왜 작동 되지? (TestGroupSystem, GroupSystem 둘다)
+    - 실행후 수동으로 꺼도 발생
+
+---------GroupSystem 문제-----
+
+크기가 커지면 제 위치에 있지 않는경우가 있음
+GC가 시작할때 얼마 안되었을때 한번만 실행.. - SimulationSystemGroup.DynamicBuffer 에서..

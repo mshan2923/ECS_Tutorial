@@ -15,7 +15,7 @@ namespace Tutorial.GerateMesh
     {
         public override void Bake(ChangeMeshAuthoring authoring)
         {
-            //AddComponent(new ChangeMeshTag{});//==========Error
+            AddComponent(new ChangeMeshTag{});
         }
     }
 }

@@ -1240,8 +1240,8 @@ MonoBehaviour:
   Prefab: {fileID: 5459738151101778136, guid: a934b99b999954640a89f7eac084989c, type: 3}
   SpawnSize: {x: 10, y: 100, z: 10}
   Offset: {x: 0, y: 5, z: 0}
-  IsHollow: 0
-  Amount: 10000
+  IsHollow: 1
+  Amount: 21800
 --- !u!4 &1913590563
 Transform:
   m_ObjectHideFlags: 0
