@@ -123,80 +123,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1001 &495171268
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 5991602724260856448, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_Name
-      value: BiodUnit
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_RootOrder
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5991602724260856452, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47, type: 3}
---- !u!1 &1302828274
+--- !u!1 &1117834536
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -204,8 +131,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1302828276}
-  - component: {fileID: 1302828275}
+  - component: {fileID: 1117834538}
+  - component: {fileID: 1117834537}
   m_Layer: 0
   m_Name: Controller
   m_TagString: Untagged
@@ -213,19 +140,19 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1302828275
+--- !u!114 &1117834537
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1302828274}
+  m_GameObject: {fileID: 1117834536}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 69cd69aac8489ee46a2c1376bf4f4cba, type: 3}
+  m_Script: {fileID: 11500000, guid: f6f8c26ad138d9644874a618c667e6ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidAmount: 500
+  boidAmount: 5000
   sharedMesh: {fileID: 0}
   sharedMaterial: {fileID: 0}
   Prefab: {fileID: 5991602724260856448, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47, type: 3}
@@ -238,13 +165,13 @@ MonoBehaviour:
   alignmentWeight: 10
   avoidWallsWeight: 10
   avoidWallsTurnDist: 5
---- !u!4 &1302828276
+--- !u!4 &1117834538
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1302828274}
+  m_GameObject: {fileID: 1117834536}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}

@@ -28,6 +28,8 @@ public partial class RotationSpeedSystemBase_IJobEntityBatch : SystemBase
 
         // 추가되었는데 HasSingleton<T>()이 인식을 못함 ....?
 
+        if (m_Query.CalculateEntityCount() == 0)
+            Enabled = false;
     }
 
     [Unity.Burst.BurstCompile]

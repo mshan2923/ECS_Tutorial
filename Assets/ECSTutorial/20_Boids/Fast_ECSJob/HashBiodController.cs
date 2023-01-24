@@ -1,14 +1,15 @@
+//public class HashBiodController : MonoBehaviour
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
 
-namespace Tutorial.Biods
+namespace Tutorial.FastBiods
 {
-    public class BoidControllerECSJob : MonoBehaviour
+    public class HashBiodController : MonoBehaviour
     {
-        public static BoidControllerECSJob Instance;
+        public static HashBiodController Instance;
         public int boidAmount = 1000;
         public Mesh sharedMesh;
         public Material sharedMaterial;
@@ -25,8 +26,6 @@ namespace Tutorial.Biods
 
         public float avoidWallsWeight = 10;
         public float avoidWallsTurnDist = 5;
-
-        //https://github.com/BadGraphixD/How-many-Boids-can-Unity-handle/blob/master/Assets/Scenes/3)%20ECS%20%2B%20Jobs/BoidControllerECSJobs.cs
 
         void Start()
         {
@@ -49,7 +48,7 @@ namespace Tutorial.Biods
         }
     }
 
-    public struct BoidControllerECSJobConponent : IComponentData
+    public struct HashBiodControllerConponent : IComponentData
     {
         public Entity prefab;
         public float offsetScale;
@@ -66,11 +65,11 @@ namespace Tutorial.Biods
         public float avoidWallsTurnDist;
     }
 
-    public class BoidControllerECSJobBaker : Baker<BoidControllerECSJob>
+    public class HashBiodControllerBaker : Baker<HashBiodController>
     {
-        public override void Bake(BoidControllerECSJob authoring)
+        public override void Bake(HashBiodController authoring)
         {
-            AddComponent(new BoidControllerECSJobConponent
+            AddComponent(new HashBiodControllerConponent
             {
                 prefab = GetEntity(authoring.Prefab),
                 offsetScale = authoring.OffsetScale,

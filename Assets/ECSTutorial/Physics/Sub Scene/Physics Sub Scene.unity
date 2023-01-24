@@ -367,7 +367,7 @@ Transform:
   m_GameObject: {fileID: 9457857}
   m_LocalRotation: {x: 0, y: 0, z: 0.08715578, w: 0.9961947}
   m_LocalPosition: {x: 5, y: 0, z: 5}
-  m_LocalScale: {x: 10, y: 1, z: 10}
+  m_LocalScale: {x: 20, y: 1, z: 20}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -492,10 +492,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5459738151101778136, guid: c4aa70b4db8358942a496824f6af9d77, type: 3}
-  SpawnSize: {x: 25, y: 100, z: 25}
+  SpawnSize: {x: 25, y: 20, z: 25}
   Offset: {x: 0, y: 5, z: 0}
-  IsHollow: 1
-  Amount: 24800
+  BetweenOffset: 1.5
+  IsSphere: 0
+  IsHollow: 0
+  Amount: 12500
 --- !u!4 &660089658
 Transform:
   m_ObjectHideFlags: 0

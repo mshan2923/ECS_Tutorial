@@ -23,10 +23,16 @@ namespace Tutorial.GroupMovement
         {
             //base.OnCreate();
             //Enabled = false;
-            Enabled = SystemAPI.HasSingleton<GroupComponent>();        
+            //Enabled = SystemAPI.HasSingleton<GroupComponent>();
         }
         protected override void OnStartRunning()
         {
+            if (SystemAPI.HasSingleton<GroupComponent>() == false)
+            {
+                Enabled = false;
+                return;
+            }
+                
             //NOTE - ECB으로 GetComponent X , SharedComponent는 수정X , IJob안에 ECB 왜..안되지?
                             
                 Cgroup = SystemAPI.GetSingleton<GroupComponent>();
@@ -60,6 +66,9 @@ namespace Tutorial.GroupMovement
         }
         protected override void OnUpdate()
         {
+            if (Enabled == false)
+                return;
+
             if (MovedTime >= Cgroup.moveTime)
                 MovedTime = 0;
             MovedTime += SystemAPI.Time.DeltaTime;
@@ -112,7 +121,11 @@ namespace Tutorial.GroupMovement
             void Execute(Entity e, [EntityIndexInQuery] int sortKey, ref UnitData data, ref LocalTransform trans)
             {
                 float timeRate = movedTime / moveTime;
-                float amountRate = (float)data.index / amount;
+                //float amountRate = (float)data.index / amount;
+                float amountRate = (float)sortKey / amount;
+
+                //NOTE - Debug.Log(data.index == sortKey);// 항상 참 , 스폰순서대로 Query 만들어 져서
+                
                 if (amountRate > timeRate)
                 {
                     if (toAPoint)

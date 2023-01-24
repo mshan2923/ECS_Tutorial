@@ -1,12 +1,15 @@
 using Unity.Entities;
 using Unity.Transforms;
 
-public struct BoidECSJobs : IComponentData { }
-
-public struct EntityWithLocalToWorld : IComponentData
+namespace Tutorial.Biods
 {
-    public Entity entity;
-    public LocalTransform localTransform;//public LocalToWorld localToWorld;
+    public struct BoidECSJobs : IComponentData { }
 
-    public int index;
+    public struct EntityWithLocalToWorld : IComponentData
+    {
+        public Entity entity;
+        public LocalTransform localTransform;//public LocalToWorld localToWorld;
+
+        public int index;
+    }
 }
