@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6f8c26ad138d9644874a618c667e6ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidAmount: 5000
+  boidAmount: 50000
   sharedMesh: {fileID: 0}
   sharedMaterial: {fileID: 0}
   Prefab: {fileID: 5991602724260856448, guid: 8ed4c3e9e25ba0b4b877d96b887f0f47, type: 3}
@@ -161,7 +161,7 @@ MonoBehaviour:
   boidPerceptionRadius: 5
   cageSize: 10
   separationWeight: 25
-  cohesionWeight: 5
+  cohesionWeight: 10
   alignmentWeight: 10
   avoidWallsWeight: 10
   avoidWallsTurnDist: 5

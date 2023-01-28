@@ -165,7 +165,7 @@ MonoBehaviour:
     y: 0
     z: 1
   MoveTime: 1
-  Speed: 2
+  Speed: 5
 --- !u!4 &1386895708
 Transform:
   m_ObjectHideFlags: 0

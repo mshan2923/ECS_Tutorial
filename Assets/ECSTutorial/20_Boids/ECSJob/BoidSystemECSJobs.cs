@@ -91,15 +91,13 @@ namespace Tutorial.Biods
             var boidHandle = boidJob.ScheduleParallel(Dependency);
             boidHandle.Complete();
 
-            //Debug.Log(boidPosition[0]);// 쓰기가 안되는듯?
-
         }
 
         [BurstCompile]
         partial struct BoidJob : IJobEntity
         {
             [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<EntityWithLocalToWorld> otherBoids;
-            //[WriteOnly] public NativeArray<float4x4> newBoidTransforms;
+            //[DeallocateOnJobCompletion] 이 자동으로 Dispose 하는거 같은데?
 
             [ReadOnly] public float boidPerceptionRadius;
             [ReadOnly] public float separationWeight;

@@ -17,6 +17,4 @@ namespace Tutorial.GroupMovement
     {
         public bool Arrive;
     }
-
-
 }

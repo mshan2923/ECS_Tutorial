@@ -15,13 +15,16 @@ using UnityEngine;
 
 namespace Tutorial.FastBiods
 {
+    [BurstCompile]
     public partial class HashBoidSystem : SystemBase
     {
         private EntityQuery boidGroup;
         private HashBiodControllerConponent controller;
 
-            // Copies all boid positions and headings into buffer
-        //[BurstCompile]
+        EntityCommandBuffer ecb;
+
+        // Copies all boid positions and headings into buffer
+        [BurstCompile]
         private partial struct CopyPositionsAndHeadingsInBuffer : IJobEntity
         {
             public NativeArray<float3> boidPositions;
@@ -44,11 +47,10 @@ namespace Tutorial.FastBiods
             [ReadOnly] public float3 positionOffsetVary;
             [ReadOnly] public float cellRadius;
 
-            public void Execute(Entity boid, in UnitBoidComponent unit, in LocalTransform trans) 
+            public void Execute(Entity boid, [EntityIndexInQuery] int boidIndex, in UnitBoidComponent unit, in LocalTransform trans) 
             {
-                {
-                    var hash = (int)math.hash(new int3(math.floor(math.mul(cellRotationVary, trans.Position + positionOffsetVary) / cellRadius)));
-                }
+                var hash = (int)math.hash(new int3(math.floor(math.mul(cellRotationVary, trans.Position + positionOffsetVary) / cellRadius)));
+                hashMap.Add(hash, boidIndex);
             }
         }
 
@@ -109,7 +111,7 @@ namespace Tutorial.FastBiods
                     //UnityEngine.Debug.Log("cellIndices Out Of Length");
 
                 float3 boidPosition = trans.Position;
-                int cellIndex = cellIndices[boidIndex];
+                int cellIndex = cellIndices[boidIndex];//한 Cell안에 여러 유닛들이 있을때 처음유닛의 인덱스로 고정
 
                 if (cellIndex >= cellBoidCount.Length || cellIndex < 0)
                 {
@@ -172,7 +174,7 @@ namespace Tutorial.FastBiods
             
 
             controller = SystemAPI.GetSingleton<HashBiodControllerConponent>();
-            var ecb = World.GetExistingSystemManaged<BeginInitializationEntityCommandBufferSystem>().CreateCommandBuffer();
+            ecb = World.GetExistingSystemManaged<BeginInitializationEntityCommandBufferSystem>().CreateCommandBuffer();
 
             var boidArray = new NativeArray<Entity>(controller.boidAmount, Allocator.TempJob);
             ecb.Instantiate(controller.prefab, boidArray);
@@ -208,6 +210,12 @@ namespace Tutorial.FastBiods
             if (Enabled == false)
                 return;
 
+                //controller.boidPerceptionRadius 은 Cell영역 범위
+                //CopyPositionsAndHeadingsInBuffer 에서 위치와 방향을 세팅 
+                // hashPositionJobHandle 에서  HashMap을 구성 ,  (방향 * (현위치 + 랜덤방향))을 해쉬화 해서 int로 바꿔 HashMap에 추가
+                // MergeCellJob 에서 cell안에 유닛 갯수와 위치 , 방향의 합
+                //
+
             int boidCount = boidGroup.CalculateEntityCount();
             if (boidCount == 0)
             {
@@ -232,6 +240,7 @@ namespace Tutorial.FastBiods
             };
             JobHandle positionAndHeadingsCopyJobHandle = positionsAndHeadingsCopyJob.ScheduleParallel(boidGroup, Dependency);
 
+
             quaternion randomHashRotation = quaternion.Euler(
                 UnityEngine.Random.Range(-360f, 360f),
                 UnityEngine.Random.Range(-360f, 360f),
@@ -252,6 +261,7 @@ namespace Tutorial.FastBiods
             };
             JobHandle hashPositionJobHandle = hashPositionsJob.ScheduleParallel(boidGroup, Dependency);
 
+
             // Proceed when these two jobs have been completed
             JobHandle copyAndHashJobHandle = JobHandle.CombineDependencies(
                 positionAndHeadingsCopyJobHandle,
@@ -270,6 +280,7 @@ namespace Tutorial.FastBiods
                 cellCount = cellBoidCount,
             };
             JobHandle mergeCellJobHandle = mergeCellsJob.Schedule(hashMap, 64, copyAndHashJobHandle);
+
             
             if (cellIndices.Length == 0)
                 Debug.Log("before moveJob , cellIndices Size is 0 ");
@@ -294,7 +305,14 @@ namespace Tutorial.FastBiods
             };
             JobHandle moveJobHandle = moveJob.ScheduleParallel(boidGroup, mergeCellJobHandle);
             moveJobHandle.Complete();
-            hashMap.Dispose();
+
+            {
+                //cellIndices.Dispose();
+                //cellBoidCount.Dispose();
+                //boidPositions.Dispose();
+                //boidHeadings.Dispose();
+                hashMap.Dispose();
+            }
 
             Dependency = moveJobHandle;
             boidGroup.AddDependency(Dependency);            

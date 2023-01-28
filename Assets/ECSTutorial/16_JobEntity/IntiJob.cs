@@ -13,25 +13,22 @@ namespace Tutorial.JobEntity
         {
             public Unity.Mathematics.Random random;
             public EntityCommandBuffer.ParallelWriter ECB;
-            public void Execute(Entity e, [EntityIndexInQuery] int sortKey)
+            public void Execute(Entity e, [EntityIndexInQuery] int sortKey, ref RotationSpeedComponent rotSpeed)
             {
-                ECB.AddComponent<RotationSpeedComponent>(sortKey, e, new RotationSpeedComponent{speed = random.NextFloat(-1, 1)});
+                //random = new Unity.Mathematics.Random((uint)sortKey + 15446);
+                //rotSpeed.speed = random.NextFloat(-1, 1);//NOTE - 유니티 크래쉬
+                ECB.SetComponent<RotationSpeedComponent>(sortKey, e, new RotationSpeedComponent{speed = random.NextFloat(-1, 1)});
+                //NOTE - SetComponent 하고 ref 하면 크래쉬?
             }
         }
 
         protected override void OnStartRunning()
         {
-            {
-                this.Enabled = false;
-                return;
-            }
-
-            var ecbSystem = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>();
 
             var setup = new SetupJob
             {
                 random = new Unity.Mathematics.Random(64562),
-                ECB = ecbSystem.CreateCommandBuffer().AsParallelWriter()
+                ECB = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>().CreateCommandBuffer().AsParallelWriter()
             };
             setup.ScheduleParallel();
         }

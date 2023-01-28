@@ -22,7 +22,7 @@ namespace Tutorial.GroupMovement
         protected override void OnCreate()
         {
             //base.OnCreate();
-            //Enabled = false;
+            Enabled = false;
             //Enabled = SystemAPI.HasSingleton<GroupComponent>();
         }
         protected override void OnStartRunning()

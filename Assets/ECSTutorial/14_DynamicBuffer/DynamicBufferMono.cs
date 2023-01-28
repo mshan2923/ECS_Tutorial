@@ -12,10 +12,12 @@ public struct DynamicBufferData : IBufferElementData
 {
     public int Value;
 }
+public struct Tutorial14Tag : IComponentData {}
 public class DynamicBufferBaker : Baker<DynamicBufferMono>
 {
     public override void Bake(DynamicBufferMono authoring)
     {
         AddBuffer<DynamicBufferData>();
+        AddComponent(new Tutorial14Tag{});
     }
 }

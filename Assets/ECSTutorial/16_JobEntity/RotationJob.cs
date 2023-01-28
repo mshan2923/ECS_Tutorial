@@ -19,6 +19,8 @@ namespace Tutorial.JobEntity
         protected override void OnUpdate()
         {
             new RotationEntityJob{}.ScheduleParallel();
+            //EntityQuery query = Entities.WithAll<RotationSpeedComponent>().ToQuery();
+            //new RotationEntityJob{}.ScheduleParallel(query);//EntityQuery의 대상을 병렬로 실행
         }
     }
 

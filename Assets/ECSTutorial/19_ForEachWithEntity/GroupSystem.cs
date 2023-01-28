@@ -19,17 +19,24 @@ namespace Tutorial.GroupMovement
         int2 resized;
         int Amount;
         float MovedTime;
-        bool ToAPoint = false;
+
+        float3 Target;
+        int seed = 0;
         protected override void OnCreate()
         {
-            //base.OnCreate();
-            Enabled = false;
+            //Enabled = false;            
         }
         protected override void OnStartRunning()
         {
             //NOTE - ECB으로 GetComponent X , SharedComponent는 수정X , IJob안에 ECB 왜..안되지?
             //NOTE - 시간 조금 지나면 자기 위치로 안가는데...
-                            
+                
+                if (SystemAPI.HasSingleton<GroupComponent>() == false)
+                {
+                    Enabled = false;
+                    return;
+                }
+
                 Cgroup = SystemAPI.GetSingleton<GroupComponent>();
                 var Temp = Cgroup.size / Cgroup.betweenSpace;
                 resized = new int2(Mathf.FloorToInt(Temp.x), Mathf.FloorToInt(Temp.y));
@@ -37,8 +44,6 @@ namespace Tutorial.GroupMovement
         
                 ecb = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>()
                     .CreateCommandBuffer();
-                ecbParallel = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>()
-                    .CreateCommandBuffer().AsParallelWriter();
 
                 for (int i = 0; i < Amount; i++)
                 {
@@ -56,18 +61,19 @@ namespace Tutorial.GroupMovement
                         Scale = Cgroup.unitSize
                     });
                 }
-        
         }
 
         protected override void OnUpdate()
         {
-            //Movetime은 이동 딜레이 , 스폰의 역순으로 먼저 이동
-            // 
-            //if (MovedTime >= Cgroup.moveTime)
-            //    MovedTime = 0;
+
+            ecbParallel = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>()
+                            .CreateCommandBuffer().AsParallelWriter();
+                            //NOTE - 미리 할당 X
+
             MovedTime += SystemAPI.Time.DeltaTime;
             moveJob = new MoveJob
             {
+                ECB = ecbParallel,
                 movedTime = MovedTime,
                 moveTime = Cgroup.moveTime,
                 amount = Amount,
@@ -76,36 +82,45 @@ namespace Tutorial.GroupMovement
 
                 resizedMap = this.resized,
                 betweenSpace = Cgroup.betweenSpace,
-                toAPoint = ToAPoint,
-                aPoint = Cgroup.aPoint,
-                bPoint = Cgroup.bPoint
-            };//----   매번 초기화를 시켜줘야 잘작동... (안하면 처음 이동이후 돌아올때 제위치로 안감)
-   
+                bPoint = Target
+            };
+            
 
             if (ArriveUnit < Amount)
             {
                 moveJob.ScheduleParallel();
 
-                int Lamount = 0;
-                Entities.ForEach((Entity e, in UnitData data) => 
+                ArriveUnit = 0;
+                Entities
+                .WithSharedComponentFilter<ArriveData>(new ArriveData{Arrive = true})
+                .ForEach((Entity e) => 
                 {
-                    if (data.Arrive)
-                        Lamount++;
-                }).Run();
-                ArriveUnit = Lamount;
+                    ArriveUnit++;
+                }).WithoutBurst().Run();
+                //NOTE - WithSharedComponentFilter는 ToQuery() 으로 EntityQuery로 변환 불가
+
             }else
             {
-                //Debug.Log("All Unit Arrive - " +  ArriveUnit + " / " + Amount + "\n" + (ToAPoint ? "To A Point" : "To B Point"));
-                ToAPoint = !ToAPoint;
+                Debug.Log("All Unit Arrive - " +  ArriveUnit + " / " + Amount);
+                //ToAPoint = !ToAPoint;
                 ArriveUnit = 0;
                 MovedTime = 0;
-            }
 
+                seed = new Unity.Mathematics.Random((uint)(seed + 1)).NextInt();
+                Target = new Unity.Mathematics.Random((uint)(seed + 1)).NextFloat3
+                (
+                    new float3(Cgroup.size.x, 0, Cgroup.size.y) * -0.5f,
+                    new float3(Cgroup.size.x, 0, Cgroup.size.y) * 0.5f
+                );
+            }
+        
         }
 
         [BurstCompile]
         partial struct MoveJob : IJobEntity
         {
+            public EntityCommandBuffer.ParallelWriter ECB;
+
             public float movedTime;
             public float moveTime;
             public int amount;
@@ -114,51 +129,26 @@ namespace Tutorial.GroupMovement
 
             public int2 resizedMap;
             public float betweenSpace;
-            public bool toAPoint;
-            public float3 aPoint;
             public float3 bPoint;
+
             void Execute(Entity e, [EntityIndexInQuery] int sortKey, ref UnitData data, ref LocalTransform trans)
             {
-                float timeRate = movedTime / moveTime;
+                float timeRate = (movedTime / moveTime) * 2;
                 float amountRate = (float)data.index / amount;
-                //float3 unitLocalPos = UnitLocalPos(data.index);
+                //float amountRate = (float)sortKey / amount;//이걸 써도 잘 작동
 
                 //역순으로 이동 시작하고 , 목표지점에 도착하면 도착
 
                 if ((1 - timeRate) <= amountRate)
                 {
-                    if (toAPoint)
-                    {
-                        //trans.Position += math.normalize((aPoint + data.offset - trans.Position)) * speed * delta;
-                        trans.Position += math.normalize((aPoint)) * speed * delta;
-                    }else
-                    {
-                        //trans.Position += math.normalize((bPoint + data.offset - trans.Position)) * speed * delta;
-                        trans.Position += math.normalize((bPoint)) * speed * delta;
-                    }
+                    trans.Position += math.normalizesafe((bPoint + data.offset) - trans.Position) * speed * delta;
+                    //math.normalize를 쓰게되면 float3.zero 일때 (Nan, Nan, Nan) 이 되어 버림
                 }
 
-                {
-                    if (toAPoint)
-                    {
-                        data.Arrive = math.distance(trans.Position , aPoint + data.offset) <= (speed  * delta);
-                    }else
-                    {
-                        data.Arrive = math.distance(trans.Position , bPoint + data.offset) <= (speed  * delta);
-                    }
+                bool arrive = math.distancesq(trans.Position , bPoint + data.offset) <= (speed * speed  * delta * delta);
+                data.Arrive = arrive;
 
-                    //SqrDistance 가 왜..?
-                }
-            }
-
-            float SqrDistance(float3 value)
-            {
-                return value.x * value.x + value.y * value.y  + value.z * value.z;
-            }
-            float3 UnitLocalPos(int index)
-            {
-                return new float3((index % resizedMap.x) * betweenSpace, 0,
-                        (Mathf.Floor((float)index / resizedMap.x) * betweenSpace));
+                ECB.SetSharedComponent<ArriveData>(sortKey, e, new ArriveData{Arrive = arrive});
             }
         }
     }
