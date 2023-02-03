@@ -26,7 +26,7 @@ public partial class SPHManagerSystem : SystemBase
         Entities
             .WithName("SPHManager")
             .WithBurst(FloatMode.Default, FloatPrecision.Standard, true)
-            .ForEach((Entity entity, int entityInQueryIndex, in SPHManagerComponent manager)=>
+            .ForEach((Entity entity, int entityInQueryIndex, in SPHManagerComponent manager, in LocalTransform trans)=>
             {
                 Debug.Log("Spawning");
 
@@ -38,7 +38,7 @@ public partial class SPHManagerSystem : SystemBase
                         
                         var position = new float3(i % 16 + random.NextFloat(-0.1f, 0.1f),
                              2 + (i / 16 / 16) * 1.1f,
-                              (i / 16) % 16) + random.NextFloat(-0.1f, 0.1f);                     
+                              (i / 16) % 16) + random.NextFloat(-0.1f, 0.1f) + trans.Position;                     
                        
                        
                         commandBuffer

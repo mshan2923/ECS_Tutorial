@@ -45,6 +45,8 @@ public partial class PhysicsSpawnerSystem : SystemBase
                 float3 sphereMin = new float3(Cspanwer.spawnSize.x,0, Cspanwer.spawnSize.z) * -Cspanwer.betweenOffset;
                 float3 sphereMax = new float3(Cspanwer.spawnSize.x, Cspanwer.spawnSize.y, Cspanwer.spawnSize.z) * Cspanwer.betweenOffset;
 
+                Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entityInQueryIndex + 1);
+
                 for (int i = 0, h = 0; h < Cspanwer.spawnSize.z; h++)
                 {
                     for (int w = 0; w < Cspanwer.spawnSize.x; w++)
@@ -53,13 +55,12 @@ public partial class PhysicsSpawnerSystem : SystemBase
                         {
                             if (Cspanwer.isSphere)
                             {
-                                Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)i + 1);
                                 
                                 var instance = ECB.Instantiate(Cspanwer.prefab);
                                 ECB.SetComponent
                                     (instance, new LocalTransform
                                     {
-                                        Position = random.NextFloat3(sphereMin, sphereMax) + Cspanwer.offset + new float3(0, 0.5f, 0),
+                                        Position = random.NextFloat3(sphereMin, sphereMax) + Cspanwer.offset + new float3(random.NextFloat(-0.1f, 0.1f), 0.5f, random.NextFloat(-0.1f, 0.1f)),
                                         Rotation = quaternion.identity,
                                         Scale = 1
                                     });
@@ -95,7 +96,7 @@ public partial class PhysicsSpawnerSystem : SystemBase
     {
         //Debug.Log("Delta : " + SystemAPI.Time.DeltaTime + " / ECS FixedTime : " + Mathf.Max(SystemAPI.Time.DeltaTime * 5,  0.01666667f));
 
-        FixedSystem.RateManager.Timestep = Mathf.Max(SystemAPI.Time.DeltaTime * 5,  0.01666667f);
+        //FixedSystem.RateManager.Timestep = Mathf.Max(SystemAPI.Time.DeltaTime * 5,  0.01666667f);
         //--------------- PhysicsStep.SolverIterationCont 가 1이면 오히려 겹침상태가 오래 지속되 성능저하
 
         {

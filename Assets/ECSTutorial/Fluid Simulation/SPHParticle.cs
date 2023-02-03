@@ -14,6 +14,7 @@ public class SPHParticle : MonoBehaviour
     public float gravityMult;
 
     public float drag;
+    public float bound = 0.5f;
 }
 
 public struct SPHParticleComponent : ISharedComponentData
@@ -29,6 +30,7 @@ public struct SPHParticleComponent : ISharedComponentData
     public float gravityMult;
 
     public float drag;
+    public float bound;
 }
 public class SPHParticleBaker : Baker<SPHParticle>
 {
@@ -43,7 +45,8 @@ public class SPHParticleBaker : Baker<SPHParticle>
             restDensity = authoring.restDensity,
             viscosity = authoring.viscosity,
             gravityMult = authoring.gravityMult,
-            drag = authoring.drag
+            drag = authoring.drag,
+            bound = authoring.bound
         });
     }
 }

@@ -369,6 +369,8 @@ public partial class FixSPHSystem : SystemBase
                 // Get the colliders
         colliders = SPHColliderGroup.ToComponentDataArray<SPHColliderComponent>(Allocator.Persistent);
         // out collidersToNativeArrayJobHandle
+
+        Enabled = (SystemAPI.GetSingleton<SwitchPhysicsComponent>().switchType == SwitchSPHtype.convert);
     }
     protected override void OnUpdate()
     {
@@ -379,9 +381,8 @@ public partial class FixSPHSystem : SystemBase
         
         for (int typeIndex = 1; typeIndex < uniqueTypes.Count; typeIndex++)
         {
-            Debug.Log("Running");
 
-                        // Get the current chunk setting
+            // Get the current chunk setting
             SPHParticleComponent settings = uniqueTypes[typeIndex];
             //SPHCharacterGroup.SetFilter(settings);
             //SPHCharacterGroup.AddSharedComponentFilterManaged(settings);
@@ -405,7 +406,7 @@ public partial class FixSPHSystem : SystemBase
             NativeArray<int> cellOffsetTableNative = new NativeArray<int>(cellOffsetTable, Allocator.TempJob);
             #endregion
 
-            #region  Add new or dispose previous particle chunks
+            #region  Add new or dispose previous particle chunks / 쓰는거 맞아?
             PreviousParticle nextParticles = new PreviousParticle
             {
                 hashMap = hashMap,
@@ -436,7 +437,7 @@ public partial class FixSPHSystem : SystemBase
             previousParticles[cacheIndex] = nextParticles;
             #endregion
 
-            #region  Initialize the empty arrays with a default value
+            #region  (Job Process 1) Initialize the empty arrays with a default value
             MemsetNativeArray<float> particlesPressureJob = new MemsetNativeArray<float> { Source = particlesPressure, Value = 0.0f };
             JobHandle particlesPressureJobHandle = particlesPressureJob.Schedule(particleCount, 64, Dependency);
 
@@ -450,7 +451,9 @@ public partial class FixSPHSystem : SystemBase
             JobHandle particlesForcesJobHandle = particlesForcesJob.Schedule(particleCount, 64, Dependency);
             #endregion
 
-            #region  Put positions into a hashMap
+            #region  (Job Process 2) Put positions into a hashMap
+            // hashPositionsJob에서 해쉬맵을 만들고 , particlesPosition에 위치값 넣기
+            // mergeParticlesJob은 유닛갯수 크기만큼 particleIndices를 만드는데 , 일정영역 안에 있는건 처음꺼인 해쉬키값으로
             HashPositions hashPositionsJob = new HashPositions
             {
                 positions = particlesPosition,
@@ -470,7 +473,8 @@ public partial class FixSPHSystem : SystemBase
             JobHandle mergedMergedParticlesDensityPressure = JobHandle.CombineDependencies(mergeParticlesJobHandle, particlesPressureJobHandle, particlesDensityJobHandle);
             #endregion
 
-            #region  Compute density pressure
+            #region  (Job Process 3) Compute density pressure
+            // 주변 영역중 , 일정범위 안에 있는것들을 질량을 합함  ... 어마?
             ComputeDensityPressure computeDensityPressureJob = new ComputeDensityPressure
             {
                 particlesPosition = particlesPosition,
@@ -485,7 +489,8 @@ public partial class FixSPHSystem : SystemBase
             JobHandle mergeComputeDensityPressureVelocityForces = JobHandle.CombineDependencies(computeDensityPressureJobHandle, particlesForcesJobHandle);//particlesVelocityJobHandle
             #endregion
 
-            #region  Compute forces
+            #region  (Job Process 4) Compute forces
+            // 주변 영역중 , 일정범위 안에 있는것들을 가속도(속도 / 질량)를 더함
             ComputeForces computeForcesJob = new ComputeForces
             {
                 particlesPosition = particlesPosition,
@@ -500,7 +505,8 @@ public partial class FixSPHSystem : SystemBase
             JobHandle computeForcesJobHandle = computeForcesJob.Schedule(particleCount, 64, mergeComputeDensityPressureVelocityForces);
             #endregion
 
-            #region  Integrate
+            #region  (Job Process 5) Integrate
+            // 위치, 속력값 적용
             Integrate integrateJob = new Integrate
             {
                 particlesPosition = particlesPosition,
@@ -513,7 +519,7 @@ public partial class FixSPHSystem : SystemBase
             JobHandle mergedIntegrateCollider = JobHandle.CombineDependencies(integrateJobHandle, collidersToNativeArrayJobHandle);
             #endregion
 
-                        // Compute Colliders
+            // (Job Process 6) Compute Colliders
             ComputeColliders computeCollidersJob = new ComputeColliders
             {
                 particlesPosition = particlesPosition,
@@ -523,7 +529,7 @@ public partial class FixSPHSystem : SystemBase
             };
             JobHandle computeCollidersJobHandle = computeCollidersJob.Schedule(particleCount, 64, mergedIntegrateCollider);
 
-                        // Apply translations and velocities
+            // (Job Process 7) Apply translations and velocities
             ApplyTranslations applyTranslationsJob = new ApplyTranslations
             {
                 particlesPosition = particlesPosition,
