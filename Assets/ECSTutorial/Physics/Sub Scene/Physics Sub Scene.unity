@@ -491,7 +491,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1cd32cbe00bff734683758a1a692f3bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Prefab: {fileID: 5459738151101778136, guid: a934b99b999954640a89f7eac084989c, type: 3}
+  Prefab: {fileID: 5459738151101778136, guid: c4aa70b4db8358942a496824f6af9d77, type: 3}
   SpawnSize: {x: 25, y: 16, z: 25}
   Offset: {x: 0, y: 5, z: 0}
   BetweenOffset: 1.5

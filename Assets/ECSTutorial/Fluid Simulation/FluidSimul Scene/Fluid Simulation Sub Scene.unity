@@ -240,7 +240,7 @@ GameObject:
   - component: {fileID: 772702604}
   - component: {fileID: 772702603}
   - component: {fileID: 772702602}
-  - component: {fileID: 772702601}
+  - component: {fileID: 772702607}
   - component: {fileID: 772702605}
   - component: {fileID: 772702606}
   m_Layer: 0
@@ -250,28 +250,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!64 &772702601
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 772702599}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 0
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!23 &772702602
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -385,6 +363,27 @@ MonoBehaviour:
   gravityMult: 0
   drag: 0.025
   bound: 0.5
+--- !u!65 &772702607
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 772702599}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 10, y: 1, z: 10}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1502428151
 GameObject:
   m_ObjectHideFlags: 0
@@ -415,9 +414,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24f75f9fc79a3ee429b598bac5f28e31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sphParticlePrefab: {fileID: 3304149101420447368, guid: 58171ce41aef35440978d6ec3802ece3,
+  sphParticlePrefab: {fileID: 5836172296315086711, guid: 4e467bf6a601fc24e9372c875a3b3ece,
     type: 3}
-  sphColliderPrefab: {fileID: 3304149101420447368, guid: 58171ce41aef35440978d6ec3802ece3,
+  sphColliderPrefab: {fileID: 5836172296315086711, guid: 4e467bf6a601fc24e9372c875a3b3ece,
     type: 3}
   amount: 10000
 --- !u!4 &1502428153

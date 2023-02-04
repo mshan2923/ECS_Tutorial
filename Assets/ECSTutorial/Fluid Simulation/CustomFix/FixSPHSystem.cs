@@ -350,8 +350,38 @@ public partial class FixSPHSystem : SystemBase
         }
 
     }
-    
-#endregion
+    [BurstCompile]
+    private partial struct TempCollisionFloor : IJobEntity
+    {
+        [ReadOnly] public NativeArray<LocalTransform> particlesPosition;
+        public NativeArray<SPHVelocityComponent> particlesVelocity;
+
+        [ReadOnly] public SPHParticleComponent particle;
+
+
+        public void Execute(Entity entity, [EntityIndexInQuery] int index, in SPHVelocityComponent sphCollider, in SPHParticleComponent particleCom)
+        {
+            //translation.Position = particlesPosition[index].Position;
+            //sphCollider.value = particlesVelocity[index].value;
+            if (particlesPosition[index].Position.y < particle.radius * 0.5f)
+            {
+                particlesVelocity[index] = new SPHVelocityComponent
+                {
+                    //value = DampVelocity(sphCollider.value, math.normalizesafe(sphCollider.value), 1 - particleCom.drag, particleCom.bound * -1)
+
+                    value = math.reflect(sphCollider.value, new float3(0, 1, 0)) * (1 - particle.drag) * particle.bound
+
+                    //value = new float3(0, 1, 0) * math.length(sphCollider.value) * math.clamp((1 - particle.drag), 0, 1) * math.clamp((1 - particle.bound), 0, 1)
+
+                    //================== 왜 가라앉지??????? , 서로 밀다보니까?
+                };
+            }
+
+        }
+
+    }
+
+    #endregion
 
     protected override void OnCreate()
     {
@@ -529,13 +559,21 @@ public partial class FixSPHSystem : SystemBase
             };
             JobHandle computeCollidersJobHandle = computeCollidersJob.Schedule(particleCount, 64, mergedIntegrateCollider);
 
+            var collisionFloor = new TempCollisionFloor
+            {
+                particlesPosition = particlesPosition,
+                particlesVelocity = particlesVelocity,
+                particle = settings
+            };
+            JobHandle collisionFloorHandle = collisionFloor.ScheduleParallel(computeCollidersJobHandle);
+
             // (Job Process 7) Apply translations and velocities
             ApplyTranslations applyTranslationsJob = new ApplyTranslations
             {
                 particlesPosition = particlesPosition,
                 particlesVelocity = particlesVelocity
             };
-            JobHandle applyTranslationsJobHandle = applyTranslationsJob.Schedule(computeCollidersJobHandle);
+            JobHandle applyTranslationsJobHandle = applyTranslationsJob.Schedule(collisionFloorHandle);//computeCollidersJobHandle
 
             this.Dependency = applyTranslationsJobHandle;
         }

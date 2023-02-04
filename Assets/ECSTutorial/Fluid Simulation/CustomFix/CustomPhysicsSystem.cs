@@ -112,7 +112,7 @@ public partial class CustomPhysicsSystem : SystemBase
         private const float PI = 3.14159274F;
         private const float GAS_CONST = 2000.0f;
 
-
+        //***** settings 대신에 particle 쓰니까 프레임 나락
 
         public void Execute(Entity e, [EntityIndexInQuery] int index, in SPHParticleComponent particle)
         {
@@ -152,6 +152,9 @@ public partial class CustomPhysicsSystem : SystemBase
             // Apply density and compute/apply pressure
             densities[index] = density;
             pressures[index] = GAS_CONST * (density - settings.restDensity);
+
+            //===>DirectionToHash GridHash.Hash(GridHash.Quantize(position, settings.radius) + 'Direction(ex : float3(0,1,0))');
+            //      found = hashMap.TryGetFirstValue(hash, out j, out iterator); / j : ParticleUnitIndex
         }
     }
 
@@ -367,9 +370,12 @@ public partial class CustomPhysicsSystem : SystemBase
     [BurstCompile]
     private partial struct TempCollisionFloor : IJobEntity
     {
-        public NativeArray<LocalTransform> particlesPosition;
+        [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+        [ReadOnly] public NativeArray<LocalTransform> particlesPosition;
         public NativeArray<SPHVelocityComponent> particlesVelocity;
-        
+
+        [ReadOnly] public SPHParticleComponent particle;
+
 
         private static Vector3 DampVelocity( float3 velocity, float3 penetrationNormal, float drag, float bound)
         {
@@ -386,28 +392,113 @@ public partial class CustomPhysicsSystem : SystemBase
         {
             //translation.Position = particlesPosition[index].Position;
             //sphCollider.value = particlesVelocity[index].value;
-            if (particlesPosition[index].Position.y < 0)
+            if (particlesPosition[index].Position.y < particle.radius * 0.5f)
             {
                 particlesVelocity[index] = new SPHVelocityComponent
                 {
                     //value = DampVelocity(sphCollider.value, math.normalizesafe(sphCollider.value), 1 - particleCom.drag, particleCom.bound * -1)
 
-                    value = math.reflect(sphCollider.value, new float3(0, 1, 0)) * (1 - particleCom.drag) * (1 - particleCom.bound)
-                    //math.normalizesafe(sphCollider.value)
+                    value = math.reflect(sphCollider.value, new float3(0, 1, 0)) * (1 - particle.drag) * particle.bound
 
-                    //value = new float3(0, 1, 0) * math.max(math.length(sphCollider.value), 1)
+                    //value = new float3(0, 1, 0) * math.length(sphCollider.value) * math.clamp((1 - particle.drag), 0, 1) * math.clamp((1 - particle.bound), 0, 1)
+
+                    //================== 왜 가라앉지??????? , 서로 밀다보니까?
                 };
             }else
             {
+
+                {
+                    /*
+                    var hashed = GridHash.Hash(GridHash.Quantize(particlesPosition[index].Position, particle.radius) + new int3(0, -1, 0));
+                    bool found = hashMap.TryGetFirstValue(hashed, out int j, out var iterator);
+                    found = (math.lengthsq(particlesPosition[index].Position - particlesPosition[j].Position) <= particle.smoothingRadius * 2);
+                    var moveDot = math.dot(math.normalize((particlesPosition[j].Position - particlesPosition[index].Position)), math.normalize(new float3(0, -9.8f, 0)));
+                    float viscosityRate = math.clamp((moveDot / 90), 0, 1);
+                    */
+                }//접촉 ... 잘못 계산
+
+                #region Disable - 주변접촉하는거에 따라 중력감소하는데 , 덩어리 지면 안떨어짐
+                /*
+                int i, hash, j;
+                int3 gridOffset;
+                int3 gridPosition = GridHash.Quantize(particlesPosition[index].Position, particle.radius);
+                bool found;
+                float grvityRate = 0;
+
+                // Find neighbors
+                for (int oi = 0; oi < 27; oi++)
+                {
+                    i = oi * 3;
+                    gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
+                    hash = GridHash.Hash(gridPosition + gridOffset);
+                    NativeMultiHashMapIterator<int> iterator;
+                    found = hashMap.TryGetFirstValue(hash, out j, out iterator);
+
+                    while(found)
+                    {
+                        // Neighbor found, get density
+                        if (index == j)
+                        {
+                            found = hashMap.TryGetNextValue(out j, ref iterator);
+                            continue;
+                        }
+
+                        //====================== 거리비교를 해서 접촉중인 유닛들의 ((Dot(아래 , 대상 - 현재유닛위치))의 합 / 90) = 중력비율
+                        if (math.lengthsq(particlesPosition[index].Position - particlesPosition[j].Position) <= particle.smoothingRadius * 2)
+                        {
+                            float moveDot = math.dot(math.normalize((particlesPosition[j].Position - particlesPosition[index].Position)), math.normalize(new float3(0, -9.8f, 0)));
+                            grvityRate += (math.clamp(moveDot, 0, 90) / 90);
+                        }
+                            // Next neighbor
+                        found = hashMap.TryGetNextValue(out j, ref iterator);
+                    }
+
+                }
+                */
+                #endregion
+
+                float gravityRate = 0;
+
+                var hashed = GridHash.Hash(GridHash.Quantize(particlesPosition[index].Position, particle.radius) + new int3(0, -1, 0));
+                if (hashMap.TryGetFirstValue(hashed, out int j, out var iterator))
+                {
+                    if ((math.lengthsq(particlesPosition[index].Position - particlesPosition[j].Position) <= particle.smoothingRadius * 2))
+                    {
+                        var moveDot = math.dot(math.normalize((particlesPosition[j].Position - particlesPosition[index].Position)), math.normalize(new float3(0, -9.8f, 0)));
+                        gravityRate += math.clamp((moveDot / 90), 0, 1);
+                    }
+                }
+                hashed = GridHash.Hash(GridHash.Quantize(particlesPosition[index].Position, particle.radius));
+                if (hashMap.TryGetFirstValue(hashed, out j, out iterator))
+                {
+                    if (math.lengthsq(particlesPosition[index].Position - particlesPosition[j].Position) <= (particle.smoothingRadius * particle.smoothingRadius))
+                    {
+                        var moveDot = math.dot(math.normalize((particlesPosition[j].Position - particlesPosition[index].Position)), math.normalize(new float3(0, -9.8f, 0)));
+                        gravityRate += math.clamp(((moveDot * Mathf.Rad2Deg) / 90), 0, 1);
+                    }
+                }
+
+
+                //=========== particleCom 쓸때 기다리는것 때문에 프레임 나락감 , 추가안해도 포함 / 주변에 접촉해있는 각도가 ((90 - Dot) 의 합 / 90 ) => viscosityRate
+
                 //+ (new float3(0, -9.8f, 0) * particleCom.gravityMult)
                 particlesVelocity[index] = new SPHVelocityComponent
                 {
-                    value = particlesVelocity[index].value * (1 - particleCom.drag) + (new float3(0, -9.8f, 0) * particleCom.gravityMult * 1)//충돌감지후 중력에 가중치 부여 (쌓여있을수 있게)
+                    value = particlesVelocity[index].value * (1 - particle.drag) + (new float3(0, -9.8f, 0) * particleCom.gravityMult * math.clamp(gravityRate, 0, 1))
+
+                    //value = particlesVelocity[index].value * (1 - particle.drag) + (new float3(0, -9.8f, 0) * particle.gravityMult * 1)//Legacy
+                    //충돌감지후 중력에 가중치 부여 (쌓여있을수 있게) / (found ? 0 : 1)
                 };
             }
 
             //ComputeForces의 충돌 계산을 가져와서 진행방향만 충돌 검색해서 멈추게하면 테스트 되니까
             //      가장 가까운 지점이 일정거리면 암튼 ㅇㅇ
+
+            //      position = particlesPosition[index].Position
+            //===>DirectionToHash : GridHash.Hash(GridHash.Quantize(position, particleCom.radius) + 'Direction(ex : float3(0,1,0))');
+            //      found = hashMap.TryGetFirstValue(hash, out j, out iterator); / j : ParticleUnitIndex
+
+
         }
 
     }
@@ -600,8 +691,10 @@ public partial class CustomPhysicsSystem : SystemBase
 
             var TempColision = new TempCollisionFloor
             {
+                hashMap = hashMap,
                 particlesPosition = particlesPosition,
                 particlesVelocity = particlesVelocity,
+                particle = settings
             };
             JobHandle TempCollisionHandle = TempColision.ScheduleParallel(mergedIntegrateCollider);
 
