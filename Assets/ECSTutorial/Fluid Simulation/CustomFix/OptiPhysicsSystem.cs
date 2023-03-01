@@ -1,7 +1,3 @@
-
-//public class CustomPhysicsSystem : MonoBehaviour
-
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
@@ -16,8 +12,11 @@ using Samples.Boids;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(TransformSystemGroup))]
+[UpdateAfter(typeof(SPHManagerSystem))]
 [BurstCompile]
-public partial class CustomPhysicsSystem : SystemBase
+//OptiPhysicsSystem
+
+public partial class OptiPhysicsSystem : SystemBase
 {
     private EntityQuery SPHCharacterGroup;
     private EntityQuery SPHColliderGroup;
@@ -29,6 +28,17 @@ public partial class CustomPhysicsSystem : SystemBase
 
     private List<SPHParticleComponent> uniqueTypes = new List<SPHParticleComponent>(10);
     private List<PreviousParticle> previousParticles = new List<PreviousParticle>();
+
+    //float Delay = 0.1f;
+    //float DelayCount;
+
+    public int SpawnPoolAmount = 0;
+    public int SpawnedAmount = 0;
+
+    int SkipFramCount = 0;
+    int SkipFram = 3;
+
+    float lifetime = 0;
 
     private static readonly int[] cellOffsetTable =
     {
@@ -331,13 +341,6 @@ public partial class CustomPhysicsSystem : SystemBase
                 {
                     velocity = DampVelocity(copyColliders[i], velocity, penetrationNormal, 1.0f - settings.drag, 1 - particle.bound);
                     position = penetrationPosition - penetrationNormal * math.abs(penetrationLength);
-
-                    {
-                        //float3 colliderProjection = math.normalize(copyColliders[i].position - position);
-                        //(1 - math.clamp((math.dot(colliderProjection, penetrationNormal) / (Mathf.Deg2Rad * 90)), 0, 1))
-
-
-                    }
                 }
             }
             //============================================================== 충돌노말과 속력노말의 Dot 으로 중력 비례?
@@ -377,10 +380,10 @@ public partial class CustomPhysicsSystem : SystemBase
         [ReadOnly] public SPHParticleComponent particle;
 
 
-        private static Vector3 DampVelocity( float3 velocity, float3 penetrationNormal, float drag, float bound)
+        private static Vector3 DampVelocity(float3 velocity, float3 penetrationNormal, float drag, float bound)
         {
             float3 newVelocity = math.dot(velocity, penetrationNormal) * penetrationNormal * bound
-                                + math.dot(velocity, new float3(1,0,0)) * new float3(1, 0, 0) * drag
+                                + math.dot(velocity, new float3(1, 0, 0)) * new float3(1, 0, 0) * drag
                                 + math.dot(velocity, new float3(0, 1, 0)) * new float3(0, 1, 0) * drag;
             newVelocity = math.dot(newVelocity, new float3(0, 0, 1)) * new float3(0, 0, 1)
                         + math.dot(newVelocity, new float3(1, 0, 0)) * new float3(1, 0, 0)
@@ -392,8 +395,13 @@ public partial class CustomPhysicsSystem : SystemBase
         {
             //translation.Position = particlesPosition[index].Position;
             //sphCollider.value = particlesVelocity[index].value;
-            if (particlesPosition[index].Position.y < particle.radius * 0.5f)
+            if (particlesPosition[index].Position.y < particle.radius * 0.5f)//======================= 나중에 CollisionY 적용
             {
+                if (Mathf.Approximately(math.lengthsq(sphCollider.value), 0))
+                {
+                    return;
+                }
+
                 particlesVelocity[index] = new SPHVelocityComponent
                 {
                     //value = DampVelocity(sphCollider.value, math.normalizesafe(sphCollider.value), 1 - particleCom.drag, particleCom.bound * -1)
@@ -404,18 +412,9 @@ public partial class CustomPhysicsSystem : SystemBase
 
                     //================== 왜 가라앉지??????? , 서로 밀다보니까?
                 };
-            }else
+            }
+            else
             {
-
-                {
-                    /*
-                    var hashed = GridHash.Hash(GridHash.Quantize(particlesPosition[index].Position, particle.radius) + new int3(0, -1, 0));
-                    bool found = hashMap.TryGetFirstValue(hashed, out int j, out var iterator);
-                    found = (math.lengthsq(particlesPosition[index].Position - particlesPosition[j].Position) <= particle.smoothingRadius * 2);
-                    var moveDot = math.dot(math.normalize((particlesPosition[j].Position - particlesPosition[index].Position)), math.normalize(new float3(0, -9.8f, 0)));
-                    float viscosityRate = math.clamp((moveDot / 90), 0, 1);
-                    */
-                }//접촉 ... 잘못 계산
 
                 #region Disable - 주변접촉하는거에 따라 중력감소하는데 , 덩어리 지면 안떨어짐
                 /*
@@ -507,13 +506,23 @@ public partial class CustomPhysicsSystem : SystemBase
     private partial struct AddTranslations : IJobEntity
     {
         public float delta;
+        private const float DT = 0.0008f;
 
         public void Execute(Entity entity, [EntityIndexInQuery] int index, ref LocalTransform translation, ref SPHVelocityComponent sphCollider, in SPHParticleComponent particle)
         {
+            if (translation.Position.y < particle.radius * 0.5f)//======================= 나중에 CollisionY 적용
+            {
+                //if (Mathf.Approximately(math.lengthsq(sphCollider.value), 0))
+                {
+                    //translation.Position = new float3(0, 10, 0);//기다리느라 프레임 드랍 엄청 심함
+                    sphCollider.value = math.reflect(sphCollider.value, new float3(0, 1, 0)) * (1 - particle.drag) * particle.bound;
+                    return;
+                }
+            }
+
             translation.Position += sphCollider.value * delta;
             //sphCollider.value = particlesVelocity[index].value;
             sphCollider.value -= sphCollider.value * particle.drag;
-
         }
 
     }
@@ -544,7 +553,8 @@ public partial class CustomPhysicsSystem : SystemBase
             Enabled = false;
             return;
         }
-        Enabled = (SystemAPI.GetSingleton<SwitchPhysicsComponent>().switchType == SwitchSPHtype.customFix);
+        Enabled = (SystemAPI.GetSingleton<SwitchPhysicsComponent>().switchType == SwitchSPHtype.Optify);
+        
     }
     protected override void OnUpdate()
     {
@@ -552,11 +562,24 @@ public partial class CustomPhysicsSystem : SystemBase
 
         EntityManager.GetAllUniqueSharedComponentsManaged(uniqueTypes);
 
-        //DelayCount += SystemAPI.Time.DeltaTime;
+        if (SpawnPoolAmount == 0)
+        {
+            SpawnPoolAmount = SPHCharacterGroup.CalculateEntityCount();
+        }
+        //=============== 어... 전체적인 구조가 변하네...
+        // =====  HashPositions에서 각 유닛마다 스폰유무를 확인후 , 스폰된것만 사용
+        // ===== 스폰 포인트 , 스폰 상태 변경, Collision Y
+        // 스폰 상태변경이 가장 큰 문제... 너무 쉽게 생각 했어.... / 스폰량 제한이 없다면 해결되긴 한데
+
+        //====> 생성한 갯수를 최대Pool로 하고, particleCount를 점점 늘리는 방식 / 제거될시 바로 스폰
+
+
+        SkipFramCount++;
+        lifetime += SystemAPI.Time.DeltaTime;
 
         for (int typeIndex = 1; typeIndex < uniqueTypes.Count; typeIndex++)
         {
-            if (true)// 매번 N초 마다 실행 + 값 초기화는 for 외부에서
+            if (SkipFramCount >= SkipFram)// 매번 N초 마다 실행 + 값 초기화는 for 외부에서 / DelayCount > Delay
             {
                 // Get the current chunk setting
                 SPHParticleComponent settings = uniqueTypes[typeIndex];
@@ -572,6 +595,8 @@ public partial class CustomPhysicsSystem : SystemBase
 
                 int cacheIndex = typeIndex - 1;
                 int particleCount = particlesPosition.Length;
+                //int particleCount = Mathf.Min(particlesPosition.Length, Mathf.RoundToInt(lifetime * 10));//=========== 왜 ... 휴무시간이 엄청길어지지?
+                
 
                 NativeMultiHashMap<int, int> hashMap = new NativeMultiHashMap<int, int>(particleCount, Allocator.TempJob);
 
@@ -581,6 +606,8 @@ public partial class CustomPhysicsSystem : SystemBase
                 NativeArray<int> particleIndices = new NativeArray<int>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 
                 NativeArray<int> cellOffsetTableNative = new NativeArray<int>(cellOffsetTable, Allocator.TempJob);
+
+                NativeArray<bool> particleSpawned = new NativeArray<bool>(particleCount, Allocator.TempJob);
                 #endregion
 
                 #region  Add new or dispose previous particle chunks / 쓰는거 맞아?
@@ -614,7 +641,7 @@ public partial class CustomPhysicsSystem : SystemBase
                 previousParticles[cacheIndex] = nextParticles;
                 #endregion
 
-                #region  (Job Process 1) Initialize the empty arrays with a default value
+                #region  (Job Process 1) Initialize the empty arrays with a default value / Low cost
                 MemsetNativeArray<float> particlesPressureJob = new MemsetNativeArray<float> { Source = particlesPressure, Value = 0.0f };
                 JobHandle particlesPressureJobHandle = particlesPressureJob.Schedule(particleCount, 64, Dependency);
 
@@ -626,7 +653,6 @@ public partial class CustomPhysicsSystem : SystemBase
 
                 MemsetNativeArray<float3> particlesForcesJob = new MemsetNativeArray<float3> { Source = particlesForces, Value = new float3(0, 0, 0) };
                 JobHandle particlesForcesJobHandle = particlesForcesJob.Schedule(particleCount, 64, Dependency);
-
 
                 #endregion
 
@@ -743,16 +769,17 @@ public partial class CustomPhysicsSystem : SystemBase
                 JobHandle addTranslationsHandle = addTranslationsJob.ScheduleParallel(Dependency);
                 addTranslationsHandle.Complete();
             }
-            
+
         }
 
         //Note - 매프레임마다 실행되어서 비용증가 , 대부분을 기다리는데 사용 그다음이 'ComputeDesityPressure'
         //      ++ 영역 단위로 뭉쳐서 계산하면 더 빨라짐 / 만개 기준 200FPS 이상 가능할듯
         //      
 
-        //if (DelayCount > Delay)
+        if (SkipFramCount >= SkipFram)//(DelayCount > Delay)
         {
             //DelayCount = 0;
+            SkipFramCount = 0;
         }
         //=============== Integrate에서 particlesVelocity 으로 위치 계산 하던데
         //=============== 이걸 이용해서 계산만 주기적으로 실행(매번X)

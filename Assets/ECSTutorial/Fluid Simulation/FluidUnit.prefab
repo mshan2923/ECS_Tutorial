@@ -116,9 +116,9 @@ MonoBehaviour:
   radius: 1
   smoothingRadius: 1
   smoothingRadiusSq: 1
-  mass: 10
-  restDensity: 100
+  mass: 1
+  restDensity: 1
   viscosity: 0.1
-  gravityMult: 1
+  gravityMult: 0.2
   drag: 0.025
-  bound: 1
+  bound: 0.1

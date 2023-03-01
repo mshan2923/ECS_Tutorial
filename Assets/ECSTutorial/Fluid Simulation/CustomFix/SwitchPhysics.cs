@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
 
-public enum SwitchSPHtype { convert , customFix}
+public enum SwitchSPHtype { convert , customFix, Optify}
 public class SwitchPhysics : MonoBehaviour
 {
     public SwitchSPHtype SwitchType;

@@ -400,6 +400,11 @@ public partial class FixSPHSystem : SystemBase
         colliders = SPHColliderGroup.ToComponentDataArray<SPHColliderComponent>(Allocator.Persistent);
         // out collidersToNativeArrayJobHandle
 
+        if (SystemAPI.HasSingleton<SwitchPhysicsComponent>() == false)
+        {
+            Enabled = false;
+            return;
+        }
         Enabled = (SystemAPI.GetSingleton<SwitchPhysicsComponent>().switchType == SwitchSPHtype.convert);
     }
     protected override void OnUpdate()

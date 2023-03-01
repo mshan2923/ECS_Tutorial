@@ -36,9 +36,9 @@ public partial class SPHManagerSystem : SystemBase
                         // entity 생성 예약
                         var instance = commandBuffer.Instantiate(entityInQueryIndex, manager.Particle);
                         
-                        var position = new float3(i % 16 + random.NextFloat(-0.1f, 0.1f),
+                        var position = new float3((i % 16) * 1.2f + random.NextFloat(-0.1f, 0.1f),
                              2 + (i / 16 / 16) * 1.1f,
-                              (i / 16) % 16) + random.NextFloat(-0.1f, 0.1f) + trans.Position;                     
+                              ((i / 16) % 16) * 1.2f + random.NextFloat(-0.1f, 0.1f)) + trans.Position;                     
                        
                        
                         commandBuffer

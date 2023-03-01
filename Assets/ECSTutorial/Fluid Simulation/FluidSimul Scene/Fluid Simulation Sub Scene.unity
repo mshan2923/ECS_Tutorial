@@ -446,4 +446,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dad4bcbcd16d37743b207c68f835a827, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SwitchType: 1
+  SwitchType: 2
