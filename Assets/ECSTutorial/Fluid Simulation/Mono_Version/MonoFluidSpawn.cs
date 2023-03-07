@@ -11,12 +11,13 @@ public class MonoFluidSpawn : MonoBehaviour
     void Start()
     {
         var random = new Unity.Mathematics.Random(1);
+        var trans = gameObject.transform;
 
         for(int i = 0; i < Amount; i++)
         {
-            var position = new float3(i % 16 + random.NextFloat(-0.1f, 0.1f),
-                2 + (i / 16 / 16) * 1.1f,
-                (i / 16) % 16) + random.NextFloat(-0.1f, 0.1f);
+            var position = new float3(i % 16 + random.NextFloat(-0.1f, 0.1f) + trans.position.x,
+                2 + (i / 16 / 16) * 1.1f + trans.position.y,
+                (i / 16) % 16) + random.NextFloat(-0.1f, 0.1f) + trans.position.z;
 
             GameObject.Instantiate(prefab, position, Quaternion.identity);
         }

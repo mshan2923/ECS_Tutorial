@@ -440,6 +440,10 @@ public static class Math
             return sqr ? (Cloest1 - Cloest2).sqrMagnitude : (Cloest1 - Cloest2).magnitude;
         }
     }
+    /// <summary>
+    /// Return Length is Less 1 
+    /// </summary>
+    /// <returns></returns>
     public static Vector3 GetCollisionReflect(Quaternion Target, Quaternion Other, float TargetMass, float OtherMass)
     {
         var AddVecForward = (Target * Vector3.forward * TargetMass + Other * Vector3.forward * OtherMass).normalized;
@@ -447,6 +451,10 @@ public static class Math
 
         var AddVecRot = Quaternion.LookRotation(AddVecForward, AddVecUp);
 
-        return Quaternion.LookRotation(Vector3.Reflect(Target * Vector3.forward, AddVecRot * Vector3.right)) * Vector3.forward * (TargetMass / (TargetMass + OtherMass));
+        return Quaternion.LookRotation(Vector3.Reflect(Target * Vector3.forward, AddVecRot * Vector3.right)) * Vector3.forward * TargetMass;//(TargetMass / (TargetMass + OtherMass));
     }// 충돌을 했을때 기준 방향
+    public static Vector3 GetCollisionReflect(Vector3 Target, Vector3 Other, float TargetMass, float OtherMass)
+    {
+        return GetCollisionReflect(Quaternion.LookRotation(Target), Quaternion.LookRotation(Other), TargetMass, OtherMass);
+    }
 }
