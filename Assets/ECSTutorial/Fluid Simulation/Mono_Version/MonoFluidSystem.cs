@@ -195,7 +195,7 @@ public class MonoFluidSystem : MonoBehaviour
     [Header("Parameters")]
     [SerializeField] private int parameterID = 0;
     [SerializeField] private SPHParameters[] parameters = null;
-    [SerializeField] float CollsionPush = 25;
+    //[SerializeField] float CollsionPush = 25;
 
     [Header("Properties")]
     [SerializeField] private int amount = 250;
@@ -242,8 +242,8 @@ public class MonoFluidSystem : MonoBehaviour
             {
                 particles[i].Acc = GRAVITY;
                 Vector3 dir = Vector3.zero;
-                float Ndir = 0;//중력 반발력
-                float MoveResistance = 0;
+                float Ndir = 0;//중력 반발력 - 바닥의 지지력
+                float MoveResistance = 0;//이동 저항력 - 파티클간의 충돌
 
                 for (int j = 0; j < particles.Length; j++)
                 {
@@ -252,10 +252,9 @@ public class MonoFluidSystem : MonoBehaviour
                     if (sDij <= parameters[parameterID].particleRadius * parameters[parameterID].particleRadius)
                     {
                         dir += ij;
-                        //============== 바닥이 완전히 지지가 되는지 확인 > 파티클간 충돌 에서 반발력 설정
-                        // ==========  중간사이에 있는 파티클이 dir이 Normailized 되면서 위 OR 아래 선택되어서 서서히 가라앉음
+                        //dir = Math.GetCollisionReflect(particles[i].velocity.normalized, particles[j].velocity.normalized, 1, 1);
 
-                        Ndir += Vector3.Dot(ij.normalized, Vector3.up);
+                        Ndir += Mathf.Clamp01(Vector3.Dot(ij.normalized, Vector3.up));
 
                         var Lmr = Vector3.Dot(ij.normalized, particles[i].velocity.normalized);
                         //if (Lmr >= 0)
@@ -284,6 +283,8 @@ public class MonoFluidSystem : MonoBehaviour
                     {
                         particles[i].IsGround = false;
                     }
+
+                    //========== 쌓여서 압박시 이동 추가
                 }//바닥과 충돌
 
                 {
@@ -298,23 +299,17 @@ public class MonoFluidSystem : MonoBehaviour
 
                         }else
                         {
-                            //float viscosity = Vector3.Dot(dir.normalized, Vector3.up);
-
-                            //if (MoveResistance >= 0)
-                            if(Ndir >= 0)
+                            if (MoveResistance < 0)
                             {
-                                particles[i].velocity += -1 * (particles[i].velocity + (particles[i].Acc * DT));
-                                //------------ MoveResistance 를 사용하는걸로 
+                                particles[i].velocity += -1 * (particles[i].velocity)
+                                    + (1 - parameters[parameterID].particleViscosity) * particles[i].velocity.magnitude * dir.normalized;// + (particles[i].Acc * DT));
+                            }
+                            if (Ndir > 0)
+                            {
+                                particles[i].velocity += -1 * (particles[i].velocity + GRAVITY * DT);
                             }
 
-                            particles[i].IsSleep = Mathf.Approximately(Ndir, 0);// 중력 반발력
-                            // ------------- 중력 반발력 개선 : Ndir 합 하는 부분에서 Vector3.Up 대신 velocity
-                            //-------------- Ndir이 이동반발력으로 , velocity방향으로 이동할때 얼마나 제한을 받는지
-                            //------------------ clamp01() 하고 더하기 / reflect로 제한하면 더 좋은데
-                            //---- 이동반발력이 0 ~ 1 인것중 (위치차이 * 이동반발력)를 합해서 reflect의 반사 노말값으로 
-                            
-                            //============ 진행방향과 Ndir(중력 반발력) 비교해서 하면 되긴한데 
-                            //============ 겹친만큼 Force를 주면 되지 않을까?
+                            particles[i].IsSleep = Ndir > 0;
                         }
                     }
 
@@ -339,8 +334,8 @@ public class MonoFluidSystem : MonoBehaviour
 
                 if (i == DebugIndex)
                 {
-                    print($"Velocity : {particles[i].velocity} / Acc : {particles[i].Acc} / Dir : {dir} / Ndir : {Ndir} MoveResistance : { MoveResistance}" +
-                            $"\n Pos : {particles[i].position} / Is Grand : {particles[i].IsGround} / Is Sleep : {particles[i].IsSleep}");
+                    //print($"Velocity : {particles[i].velocity} / Acc : {particles[i].Acc} / Dir : {dir} / Ndir : {Ndir} MoveResistance : { MoveResistance}" +
+                    //        $"\n Pos : {particles[i].position} / Is Grand : {particles[i].IsGround} / Is Sleep : {particles[i].IsSleep}");
 
                     if (Mathf.Approximately(dir.sqrMagnitude, 0))
                     {

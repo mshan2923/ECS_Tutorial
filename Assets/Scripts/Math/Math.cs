@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Mathematics;
 
 public static class Math
 {
@@ -441,7 +440,7 @@ public static class Math
         }
     }
     /// <summary>
-    /// Return Length is Less 1 
+    /// 두백터의 충돌 반사각
     /// </summary>
     /// <returns></returns>
     public static Vector3 GetCollisionReflect(Quaternion Target, Quaternion Other, float TargetMass, float OtherMass)
@@ -451,10 +450,29 @@ public static class Math
 
         var AddVecRot = Quaternion.LookRotation(AddVecForward, AddVecUp);
 
-        return Quaternion.LookRotation(Vector3.Reflect(Target * Vector3.forward, AddVecRot * Vector3.right)) * Vector3.forward * TargetMass;//(TargetMass / (TargetMass + OtherMass));
+        return Quaternion.LookRotation(Vector3.Reflect(Target * Vector3.forward, AddVecRot * Vector3.right)) * Vector3.forward * (TargetMass / (TargetMass + OtherMass));
     }// 충돌을 했을때 기준 방향
-    public static Vector3 GetCollisionReflect(Vector3 Target, Vector3 Other, float TargetMass, float OtherMass)
+    public static bool GetSphereNormal(Vector3 TargetPos, Vector3 ProjectPos, Vector3 ProjectDir, float targetRadius, out Quaternion Normal)
     {
-        return GetCollisionReflect(Quaternion.LookRotation(Target), Quaternion.LookRotation(Other), TargetMass, OtherMass);
+        var dis = (TargetPos - ProjectPos).magnitude;
+        var ProjectDot = Vector3.Dot(ProjectDir, (ProjectPos - TargetPos).normalized);
+        var ProjectRad = Mathf.Acos(ProjectDot);
+
+        var OthoLength = dis * Mathf.Sin(ProjectRad);
+        if (OthoLength > targetRadius)
+        {
+            Normal = Quaternion.identity;
+            return false;
+        }
+
+        var ProjectLength = dis * Mathf.Cos(ProjectRad);
+        var ProjectForwardPos = TargetPos + ProjectDir * ProjectLength;
+        var ProjectUp = (ProjectForwardPos + (ProjectPos - ProjectForwardPos).normalized * OthoLength) - ProjectForwardPos;
+
+        var RotationAxis = Quaternion.LookRotation(ProjectDir * -1, ProjectUp);
+        var CollisionRad = Mathf.Asin(OthoLength / targetRadius);
+
+        Normal = RotationAxis * Quaternion.AngleAxis(CollisionRad * Mathf.Rad2Deg * -1, Vector3.right);
+        return true;
     }
 }
