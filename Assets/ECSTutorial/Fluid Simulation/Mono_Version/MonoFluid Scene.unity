@@ -661,7 +661,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   character0Prefab: {fileID: 3259755001774940917, guid: 31be527a2da6ff94daad281e044312cf,
     type: 3}
-  SpawnOffset: 0.1
+  SpawnOffset: 0.2
   parameterID: 0
   parameters:
   - particleRadius: 1
@@ -671,8 +671,7 @@ MonoBehaviour:
     particleMass: 1
     particleViscosity: 0.2
     particleDrag: 0.25
-  CollsionPush: 25
-  amount: 16
-  rowSize: 2
-  RandomPos: 0.5
-  _debugIndex: 4
+  amount: 128
+  rowSize: 4
+  RandomPos: 1.5
+  _debugIndex: 15

@@ -452,11 +452,18 @@ public static class Math
 
         return Quaternion.LookRotation(Vector3.Reflect(Target * Vector3.forward, AddVecRot * Vector3.right)) * Vector3.forward * (TargetMass / (TargetMass + OtherMass));
     }// 충돌을 했을때 기준 방향
+    public static Vector3 GetCollisionReflect(Vector3 TargetDir, Vector3 OtherDir, float TargetMass, float OtherMass)
+    {
+        var AddVecForward = (TargetDir.normalized * TargetMass + OtherDir.normalized * OtherMass).normalized;
+        var AddVecRot = Quaternion.LookRotation(AddVecForward);
+
+        return Quaternion.LookRotation(Vector3.Reflect(TargetDir, AddVecRot * Vector3.forward)) * Vector3.forward * (TargetMass / (TargetMass + OtherMass));
+    }
     public static bool GetSphereNormal(Vector3 TargetPos, Vector3 ProjectPos, Vector3 ProjectDir, float targetRadius, out Quaternion Normal)
     {
         var dis = (TargetPos - ProjectPos).magnitude;
-        var ProjectDot = Vector3.Dot(ProjectDir, (ProjectPos - TargetPos).normalized);
-        var ProjectRad = Mathf.Acos(ProjectDot);
+        //var ProjectDot = Vector3.Dot(ProjectDir, (ProjectPos - TargetPos).normalized);
+        var ProjectRad = Mathf.Acos(Vector3.Dot(ProjectDir, (ProjectPos - TargetPos).normalized));
 
         var OthoLength = dis * Mathf.Sin(ProjectRad);
         if (OthoLength > targetRadius)

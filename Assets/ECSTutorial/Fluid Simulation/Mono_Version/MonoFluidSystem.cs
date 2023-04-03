@@ -299,14 +299,36 @@ public class MonoFluidSystem : MonoBehaviour
 
                         }else
                         {
+                            if (i == DebugIndex)
+                                print($"velocity : {particles[i].velocity} / Dir : {dir}  dir : {dir.normalized}/ nDir : {Ndir}" +
+                                    $"\n Reflect : {Math.GetCollisionReflect(particles[i].velocity, dir, 1, 1)}" +
+                                    $"/ reflect : {Vector3.Reflect((particles[i].velocity + GRAVITY * DT).normalized, dir.normalized)}");
+
+
+                            //particles[i].velocity = Math.GetCollisionReflect(particles[i].velocity, -dir, 1, 1); //압력으로 누르는걸 고려 안해서 속력손실
+                            particles[i].velocity += dir.normalized;
+                            //ECS Physics 처럼 흘러내리는게 어려움
+                            //particles[i].velocity += (Vector3.Reflect((particles[i].velocity + GRAVITY * DT).normalized, dir.normalized) + dir.normalized) * 0.5f;
+
+                            // ------------------- 마참내 되긴되는데 Dir이 이상할때가 있는데?
+
                             if (MoveResistance < 0)
                             {
-                                particles[i].velocity += -1 * (particles[i].velocity)
-                                    + (1 - parameters[parameterID].particleViscosity) * particles[i].velocity.magnitude * dir.normalized;// + (particles[i].Acc * DT));
+                                //particles[i].velocity += -1 * (particles[i].velocity)
+                                //    + (1 - parameters[parameterID].particleViscosity) * particles[i].velocity.magnitude * dir.normalized;
+                                // + (particles[i].Acc * DT));// 파티클간 겹칠때 방향전환 (이건 속력에 손실이 있어서)
+
+
+                                //particles[i].velocity
+                                //Math.GetSphereNormal()//이거.... 흠
+                                //Velocity * dir 의 충돌 반사각으로  
+
+
                             }
                             if (Ndir > 0)
                             {
-                                particles[i].velocity += -1 * (particles[i].velocity + GRAVITY * DT);
+                                //particles[i].velocity += -1 * (particles[i].velocity + GRAVITY * DT);
+                                particles[i].velocity = Vector3.Reflect((particles[i].velocity + GRAVITY * DT), dir.normalized);
                             }
 
                             particles[i].IsSleep = Ndir > 0;
@@ -348,8 +370,7 @@ public class MonoFluidSystem : MonoBehaviour
                 }
 
             }
-        }//충돌 반사각 사용 테스트 / 현제 : 즉시 멈추질 않아서 붕츠붕츠 하는디?
-        // ******** 파티클간의 충돌이 바닥에 있을때 밀어냄을 영향 받지않아 , 2스택은 쌓임
+        }
 
         //--------------------------
 
