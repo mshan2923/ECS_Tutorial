@@ -121,51 +121,59 @@ namespace FluidSimulate
 
             public void Execute(int index)
             {
-                var temp = particleData[index];
-
-                if (Mathf.Approximately(pressureDir[index].sqrMagnitude, 0))
                 {
-                    if (particleData[index].isGround)
+                    var temp = particleData[index];
+
+                    if (Mathf.Approximately(pressureDir[index].sqrMagnitude, 0))
                     {
-                        temp.velocity *= 1 - (parameter.ParticleDrag * parameter.DT);
-                    }
-                }else
-                {
-                    if (particleData[index].isGround)
-                    {
-                        if (moveRes[index] >= 0)// || Mathf.Abs(moveRes[index]) > 0.01f)
+                        if (particleData[index].isGround)
                         {
-                            var reflected = Vector3.Reflect(temp.velocity, pressureDir[index].normalized);
-                            reflected.y = 0;
-
-                            temp.velocity = reflected.normalized * reflected.magnitude;
-                        }else
-                        {
-                            var reflected = Vector3.Reflect(-temp.velocity, pressureDir[index].normalized);
-                            reflected.y = 0;
-
-                            temp.velocity = reflected.normalized * reflected.magnitude;
-                        }
-                    }else
-                    {
-                        var CollisionRate = (1 - pressureDir[index].magnitude) / parameter.ParticleRadius;
-                        temp.velocity -= parameter.Evaluate(CollisionRate) *
-                             parameter.CollisionPush
-                            * pressureDir[index].normalized;
-
-                        var reflectVel = temp.velocity * (1 - parameter.ParticleViscosity);
-
-                        if (moveRes[index] >= 0)// || Mathf.Abs(moveRes[index]) > 0.01f)
-                        {
-                            temp.velocity = Vector3.Reflect((reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
-                        }else
-                        {
-                            temp.velocity = Vector3.Reflect((-reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                            temp.velocity *= 1 - (parameter.ParticleDrag * parameter.DT);
                         }
                     }
-                }
+                    else
+                    {
+                        float CollisionAcc = Mathf.Max(1 - parameter.ParticleViscosity, 0);
+                        if (particleData[index].isGround)
+                        {
+                            if (moveRes[index] >= 0)
+                            {
+                                var reflected = Vector3.Reflect(temp.velocity, pressureDir[index].normalized) * CollisionAcc;
+                                reflected.y = Mathf.Max(reflected.y, 0);
 
-                particleData[index] = temp;
+                                temp.velocity = reflected.normalized * reflected.magnitude;
+                            }
+                            else
+                            {
+                                var reflected = Vector3.Reflect(-temp.velocity, pressureDir[index].normalized) * CollisionAcc;
+                                reflected.y = Mathf.Max(reflected.y, 0);
+
+                                temp.velocity = reflected.normalized * reflected.magnitude;
+                            }
+                        }
+                        else
+                        {
+                            var CollisionRate = pressureDir[index].magnitude / parameter.ParticleRadius;
+                            temp.velocity -= parameter.Evaluate(CollisionRate) *
+                                 parameter.CollisionPush * pressureDir[index].normalized;
+
+                            //var reflectVel = temp.velocity * (1 - parameter.ParticleViscosity);// Legacy
+                            var reflectVel = temp.velocity - (parameter.DT * CollisionAcc * temp.velocity);
+
+                            if (moveRes[index] >= 0)
+                            {
+                                temp.velocity = Vector3.Reflect((reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                            }
+                            else
+                            {
+                                temp.velocity = Vector3.Reflect((-reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                            }
+                        }
+                    }
+
+                    particleData[index] = temp;
+                    
+                }//
             }
         }
 
@@ -177,33 +185,19 @@ namespace FluidSimulate
 
             public void Execute([EntityIndexInQuery] int index, ref FluidSimlationComponent data)//, in LocalTransform transform
             {
-                //=============== 설마 ref를 한개만 ?
-                /*
-                var temp = particleData[index];
-                if (particleData[index].isGround)
-                {
-                    temp.acc -= parameter.Gravity;
-                }
-                temp.velocity += particleData[index].acc * parameter.DT;
-                temp.position += particleData[index].velocity * parameter.DT;
-
-                data = temp;*/
-
-                //transform.Position = temp.position;
-
                 var acc = particleData[index].acc;
 
                 if (particleData[index].isGround)
                 {
                     //data.acc -= parameter.Gravity; //=========== 계속 Acc가 쌓임
-                    //acc -= parameter.Gravity;
+                    acc -= parameter.Gravity;
                 }
-                data.velocity += acc * parameter.DT;
+                data.velocity = particleData[index].velocity + acc * parameter.DT;
                 //if ()
                 
                 if (float.IsNaN(particleData[index].velocity.x) || float.IsNaN(particleData[index].velocity.y) || float.IsNaN(particleData[index].velocity.z))
                 {
-                    //------------- 이동을 파업했어....
+                    //이동을 파업했어....
                 }else
                 {
                     data.position += particleData[index].velocity * parameter.DT;
@@ -278,8 +272,7 @@ namespace FluidSimulate
 
 
             NativeArray<FluidSimlationComponent> particleData =
-                //ParticleGroup.ToComponentDataListAsync<FluidSimlationComponent>(Allocator.TempJob, out particleDataHandle).AsArray();
-            ParticleGroup.ToComponentDataArray<FluidSimlationComponent>(Allocator.TempJob);
+                ParticleGroup.ToComponentDataArray<FluidSimlationComponent>(Allocator.TempJob);
 
             int particleCount = particleData.Length;
 
@@ -323,7 +316,7 @@ namespace FluidSimulate
                 parameter = Parameter
             };
             JobHandle FloorCollisionHandle = FloorCollisionJob.Schedule(particleCount, 64, computePressureHandle);
-
+            
             ComputeCollision ComputeCollisionJob = new ComputeCollision
             {
                 particleData = particleData,
@@ -336,7 +329,7 @@ namespace FluidSimulate
 
             ComputeCollisionHandle.Complete();
             Debugging(particleData, particleDir, particleMoveRes, "Before AddPos");
-            //(float.IsNaN(data.velocity.x) || float.IsNaN(data.velocity.y) || float.IsNaN(data.velocity.z))
+            
 
             AddPosition AddPositionJob = new AddPosition
             {
@@ -349,8 +342,6 @@ namespace FluidSimulate
             ApplyPosition ApplyPositionJob = new() { };
             //JobHandle ApplyPositionHandle = ApplyPositionJob.ScheduleParallel(ParticleGroup, AddPositionHandle);
             ApplyPositionJob.ScheduleParallel(ParticleGroup);
-
-            //=============== 서로 붙어서 날라가는데... MONO 에선 해결한 문제인데?
 
             //------
             //ApplyPositionHandle.Complete();

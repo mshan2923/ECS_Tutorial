@@ -186,7 +186,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particleRadius: 1
   gravity: {x: 0, y: -9.81, z: 0}
-  particleViscosity: 0.25
+  particleViscosity: 0.1
   particleDrag: 0.2
   MoveFPS: 120
   collisionPushMultiply:
@@ -213,4 +213,4 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  collisionPush: 0.1
+  collisionPush: 0
