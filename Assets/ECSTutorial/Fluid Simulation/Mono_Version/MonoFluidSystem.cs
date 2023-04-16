@@ -48,7 +48,6 @@ public class MonoFluidSystem : MonoBehaviour
         public Vector3 Force;
         public Vector3 Acc;//가속
 
-        public bool IsSleep;//------ 안씀
         public bool IsGround;
 
         public void Init(Vector3 _position)
@@ -62,7 +61,6 @@ public class MonoFluidSystem : MonoBehaviour
             Force = Vector3.zero;
             Acc = Vector3.zero;
             //Penetration = Vector3.zero;
-            IsSleep = false;
             IsGround = false;
         }
     }
@@ -268,7 +266,7 @@ public class MonoFluidSystem : MonoBehaviour
                     {
                         if (particles[i].IsGround)
                         {
-                            if (MoveResistance > 0)
+                            if (MoveResistance >= 0)
                             {
                                 var temp = Vector3.Reflect(particles[i].velocity, dir.normalized);
                                 temp.y = 0;
@@ -292,17 +290,13 @@ public class MonoFluidSystem : MonoBehaviour
 
                             var reflecVel = particles[i].velocity * (1 - parameters[parameterID].particleViscosity);
 
-                            if (MoveResistance > 0)
+                            if (MoveResistance >= 0)
                             {
                                 particles[i].velocity = Vector3.Reflect((reflecVel + particles[i].Acc * DT), dir.normalized);//충돌
                             }else
                             {
                                 particles[i].velocity = Vector3.Reflect((-reflecVel + particles[i].Acc * DT), dir.normalized);
                             }
-
-                            //----------- ABS(MoveResistance) < A 일때 그냥 무시? (옆에서 접촉시)
-
-                            particles[i].IsSleep = MoveResistance > 0;
                         }
                     }
 
@@ -322,7 +316,7 @@ public class MonoFluidSystem : MonoBehaviour
                 if (i == DebugIndex)
                 {
                     print($"Velocity : {particles[i].velocity} / Acc : {particles[i].Acc} / Dir : {dir} / Ndir : {MoveResistance} / MoveResistance : { MoveResistance}" +
-                            $"\n Pos : {particles[i].position} / Is Grand : {particles[i].IsGround} / Is Sleep : {particles[i].IsSleep} / dir Length : {dir.magnitude}");
+                            $"\n Pos : {particles[i].position} / Is Grand : {particles[i].IsGround} / Is Sleep : {MoveResistance > 0} / dir Length : {dir.magnitude}");
                 }
 
             }
