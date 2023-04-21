@@ -173,6 +173,7 @@ public class MonoFluidSystem : MonoBehaviour
     [Header("Import")]
     [SerializeField] private GameObject character0Prefab = null;
     public float SpawnOffset = 0;
+    [SerializeField] private float RandomPower = 1f;
 
     [Header("Parameters")]
     [SerializeField] private int parameterID = 0;
@@ -183,7 +184,6 @@ public class MonoFluidSystem : MonoBehaviour
     [Header("Properties")]
     [SerializeField] private int amount = 250;
     [SerializeField] private int rowSize = 16;
-    [SerializeField] private float RandomPos = 1f;
     [SerializeField] private int _debugIndex = 0;
     
     private int DebugIndex
@@ -224,8 +224,8 @@ public class MonoFluidSystem : MonoBehaviour
                 for (int j = 0; j < particles.Length; j++)
                 {
                     var ij = particles[i].position - particles[j].position;
-                    var sDij = (ij).sqrMagnitude;
-                    if (sDij <= parameters[parameterID].particleRadius * parameters[parameterID].particleRadius)
+                    var rad = parameters[parameterID].particleRadius + parameters[parameterID].smoothingRadius;
+                    if ((ij).sqrMagnitude <= rad * rad)
                     {
                         dir += ij;
 
@@ -264,18 +264,19 @@ public class MonoFluidSystem : MonoBehaviour
                     }
                     else
                     {
+                        float CollisionAcc = Mathf.Max(1 - parameters[parameterID].particleViscosity, 0);
                         if (particles[i].IsGround)
                         {
                             if (MoveResistance >= 0)
                             {
-                                var temp = Vector3.Reflect(particles[i].velocity, dir.normalized);
+                                var temp = Vector3.Reflect(particles[i].velocity, dir.normalized) * CollisionAcc;
                                 temp.y = 0;
 
                                 particles[i].velocity = temp.normalized * temp.magnitude;
                             }
                             else
                             {
-                                var temp = Vector3.Reflect(-particles[i].velocity, dir.normalized);
+                                var temp = Vector3.Reflect(-particles[i].velocity, dir.normalized) * CollisionAcc;
                                 temp.y = 0;
 
                                 particles[i].velocity = temp.normalized * temp.magnitude;
@@ -284,7 +285,7 @@ public class MonoFluidSystem : MonoBehaviour
                         }
                         else
                         {
-                            var CollisionRate = (1 - dir.magnitude) / parameters[parameterID].particleRadius;
+                            var CollisionRate = (parameters[parameterID].particleRadius - dir.magnitude) / parameters[parameterID].particleRadius;
 
                             particles[i].velocity -= CollisionPushMultiply.Evaluate(CollisionRate) * CollsionPush * dir.normalized;//´ç±è
 
@@ -330,10 +331,10 @@ public class MonoFluidSystem : MonoBehaviour
 
         for (int i = 0; i < amount; i++)
         {
-            float jitter = (UnityEngine.Random.value * 2f - 1f) * parameters[parameterID].particleRadius * 0.1f * RandomPos;
-            float x = (i % rowSize) * (1 + SpawnOffset) + UnityEngine.Random.Range(-0.1f, 0.1f) * RandomPos;
+            float jitter = (UnityEngine.Random.value * 2f - 1f) * parameters[parameterID].particleRadius * 0.1f * RandomPower;
+            float x = (i % rowSize) * (1 + SpawnOffset) + UnityEngine.Random.Range(-0.1f, 0.1f) * RandomPower;
             float y = (i / rowSize) / rowSize * 1.1f * (1 + SpawnOffset);
-            float z = ((i / rowSize) % rowSize) * (1 + SpawnOffset) + UnityEngine.Random.Range(-0.1f, 0.1f) * RandomPos;
+            float z = ((i / rowSize) % rowSize) * (1 + SpawnOffset) + UnityEngine.Random.Range(-0.1f, 0.1f) * RandomPower;
 
             GameObject go = Instantiate(character0Prefab, gameObject.transform);
             go.transform.localScale = Vector3.one * parameters[parameterID].particleRadius;

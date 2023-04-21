@@ -9,13 +9,18 @@ namespace FluidSimulate
     {
         public GameObject particleObj;
         public int Amount;
-        public float Between;
+        public float RandomPower;
+
+        public void Start()
+        {
+            
+        }//이거 추가하면 인스팩터에서 비활성화 가능
     }
     public struct RemakedFluidSpawnComponent : IComponentData
     {
         public Entity particle;
         public int Amount;
-        public float Between;
+        public float RandomPower;
     }
     public class RemakedFluidSpawnBake : Baker<RemakedFluidSpawn>
     {
@@ -23,9 +28,9 @@ namespace FluidSimulate
         {
             AddComponent(new RemakedFluidSpawnComponent
             {
-                particle = GetEntity(authoring.gameObject),
+                particle = GetEntity(authoring.particleObj),//authoring.Gameobject....를 써서 계속 안된거였어...
                 Amount = authoring.Amount,
-                Between = authoring.Between
+                RandomPower = authoring.RandomPower
             });
         }
     }

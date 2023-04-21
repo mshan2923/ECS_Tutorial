@@ -7,30 +7,74 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using Random = Unity.Mathematics.Random;
+using Samples.Boids;
 
 namespace FluidSimulate
 {
     [UpdateAfter(typeof(SPHManagerSystem))]
-    public partial class FluidSimlationSystem : SystemBase
+    public partial class HashedFluidSimlationSystem : SystemBase
     {
+        private static readonly int[] cellOffsetTable =
+        {
+            1, 1, 1, 1, 1, 0, 1, 1, -1, 1, 0, 1, 1, 0, 0, 1, 0, -1, 1, -1, 1, 1, -1, 0, 1, -1, -1,
+            0, 1, 1, 0, 1, 0, 0, 1, -1, 0, 0, 1, 0, 0, 0, 0, 0, -1, 0, -1, 1, 0, -1, 0, 0, -1, -1,
+            -1, 1, 1, -1, 1, 0, -1, 1, -1, -1, 0, 1, -1, 0, 0, -1, 0, -1, -1, -1, 1, -1, -1, 0, -1, -1, -1
+        };
+
         #region Job
 
         [BurstCompile]
         partial struct PositionSetup : IJobEntity
         {
-            //public NativeArray<FluidSimlationComponent> particleData;
-            public void Execute([EntityIndexInQuery]int index, in LocalTransform transform, ref FluidSimlationComponent data)
+            public void Execute([EntityIndexInQuery] int index, in LocalTransform transform, ref FluidSimlationComponent data)
             {
-                //var temp = particleData[index];
-                //temp.position = transform.Position;
-
-                //particleData[index] = temp;
-
                 data.position = transform.Position;
-                //data.position = new Vector3(transform.Position.x, transform.Position.y, transform.Position.z);
             }
         }//처음에 스폰된 위치 적용
+
+        [BurstCompile]
+        private struct HashPositions : IJobParallelFor
+        {
+            //#pragma warning disable 0649
+            [ReadOnly] public float cellRadius;
+
+            //public NativeArray<LocalTransform> positions;
+            [ReadOnly] public NativeArray<FluidSimlationComponent> particleData;
+
+            public NativeMultiHashMap<int, int>.ParallelWriter hashMap;
+            //#pragma warning restore 0649
+
+            public void Execute(int index)
+            {
+                float3 position = particleData[index].position;
+                    //positions[index].Position;
+
+                int hash = GridHash.Hash(position, cellRadius);
+                hashMap.Add(hash, index);
+
+                //positions[index] = new LocalTransform { Position = position, Rotation = quaternion.identity, Scale = 1 };
+            }
+        }
+        [BurstCompile]
+        private struct MergeParticles : Samples.Boids.IJobNativeMultiHashMapMergedSharedKeyIndices
+        {
+            public NativeArray<int> particleIndices;
+
+            //Merge : 병합 
+            // 키가 생길때
+            public void ExecuteFirst(int index)
+            {
+                particleIndices[index] = index;
+            }
+            // 키가 있을때 , cellIndex == firstIndex
+            public void ExecuteNext(int cellIndex, int index)
+            {
+                particleIndices[index] = cellIndex;
+            }
+
+            //#pragma warning restore 0649
+            //FIXME - 
+        }//딕셔러리에 처음 삽입 OR 삽입 될때
 
         [BurstCompile]
         partial struct ResetAcc : IJobEntity
@@ -39,7 +83,7 @@ namespace FluidSimulate
             public ParticleParameterComponent parameter;
             public Vector3 AccVaule;
 
-            public void Execute([EntityIndexInQuery]int index, in FluidSimlationComponent data)
+            public void Execute([EntityIndexInQuery] int index, in FluidSimlationComponent data)
             {
                 var temp = data;
                 temp.acc = parameter.Gravity + AccVaule;
@@ -50,32 +94,59 @@ namespace FluidSimulate
         }//Acc 초기화
 
         [BurstCompile]
-        struct ComputePressure : IJobParallelFor
+        private struct ComputePressure : IJobParallelFor
         {
-
+            [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+            [ReadOnly] public NativeArray<int> cellOffsetTable;
             [ReadOnly] public NativeArray<FluidSimlationComponent> particleData;
+
+            [ReadOnly] public ParticleParameterComponent parameter;
+
+
             public NativeArray<Vector3> pressureDir;
             public NativeArray<float> moveRes;
-            public float Amount;
-
-            public ParticleParameterComponent parameter;
-
-            //============== Particleparameter(반지름, 접촉 감쇄량 등)
 
             public void Execute(int index)
             {
-                for (int j = 0; j < Amount; j++)
+                // Cache
+                //int particleCount = particlesPosition.Length;
+                var position = particleData[index].position;
+                //float density = 0.0f;
+                int i, hash, j;
+                int3 gridOffset;
+                int3 gridPosition = GridHash.Quantize(position, parameter.ParticleRadius);
+                bool found;
+
+                // Find neighbors
+                for (int oi = 0; oi < 27; oi++)
                 {
-                    var ij = particleData[index].position - particleData[j].position;
-                    var rad = parameter.ParticleRadius + parameter.SmoothRadius;
-                    if (ij.sqrMagnitude <= rad * rad)
+                    i = oi * 3;
+                    gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
+                    hash = GridHash.Hash(gridPosition + gridOffset);
+                    NativeMultiHashMapIterator<int> iterator;
+                    found = hashMap.TryGetFirstValue(hash, out j, out iterator);
+                    while (found)
                     {
-                        pressureDir[index] += ij;
-                        moveRes[index] += Mathf.Clamp01(Vector3.Dot(ij.normalized, -(particleData[index].velocity + particleData[index].acc * parameter.DT)));
+                        // Neighbor found, get density
+                        var rij = position - particleData[j].position;
+                        float r2 = math.lengthsq(rij);
+
+                        if (r2 < parameter.ParticleRadius + parameter.SmoothRadius)
+                        {
+                            //density += settings.mass * (315.0f / (64.0f * PI * math.pow(settings.smoothingRadius, 9.0f)))
+                            //  * math.pow(settings.smoothingRadiusSq - r2, 3.0f);
+
+                            pressureDir[index] += rij;
+                            moveRes[index] += Mathf.Clamp01(Vector3.Dot(rij.normalized, -(particleData[index].velocity + particleData[index].acc * parameter.DT)));
+                        }
+
+                        // Next neighbor
+                        found = hashMap.TryGetNextValue(out j, ref iterator);
                     }
                 }
+
             }
-        }//압력방향 , 이동저항력 계산
+        }
 
         [BurstCompile]
         struct ComputeFloorCollision : IJobParallelFor
@@ -101,7 +172,8 @@ namespace FluidSimulate
 
                     temp.isGround = true;
                     // 아래로 내려가지 않도록 y 방향 제거
-                }else
+                }
+                else
                 {
                     temp.isGround = false;
                 }
@@ -173,7 +245,7 @@ namespace FluidSimulate
                     }
 
                     particleData[index] = temp;
-                    
+
                 }//
             }
         }
@@ -195,11 +267,12 @@ namespace FluidSimulate
                 }
                 data.velocity = particleData[index].velocity + acc * parameter.DT;
                 //if ()
-                
+
                 if (float.IsNaN(particleData[index].velocity.x) || float.IsNaN(particleData[index].velocity.y) || float.IsNaN(particleData[index].velocity.z))
                 {
                     //이동을 파업했어....
-                }else
+                }
+                else
                 {
                     data.position += particleData[index].velocity * parameter.DT;
                 }
@@ -220,11 +293,8 @@ namespace FluidSimulate
         #endregion
 
         private EntityQuery ParticleGroup;
-        //NativeArray<FluidSimlationComponent> particle;
 
         ParticleParameterComponent Parameter;
-        //float DT = 0.0083333f;
-        //static Vector3 GRAVITY = new Vector3(0.0f, -9.81f, 0.0f);
         JobHandle PositionSetupHandle;
         bool isReady = false;
         float timer = 0;
@@ -232,26 +302,23 @@ namespace FluidSimulate
         protected override void OnCreate()
         {
             ParticleGroup = GetEntityQuery(typeof(FluidSimlationComponent), typeof(LocalTransform));
-
         }
         protected override void OnStartRunning()
         {
-
-            //====--------------> particleData의 위치 설정
             if (SystemAPI.HasSingleton<ParticleParameterComponent>())
                 Parameter = SystemAPI.GetSingleton<ParticleParameterComponent>();
             else
                 Enabled = false;
 
-            //particle = ParticleGroup.ToComponentDataListAsync<>(Allocator.Persistent)
-            // -------------------------- 나중에 장애물 추가 구현
             isReady = false;
+            
 
-            if (Parameter.simulationType != SimulationType.ECS)
+            if (Parameter.simulationType != SimulationType.HashedECS) 
             {
                 Enabled = false;
             }
         }
+
         protected override void OnUpdate()
         {
             if (isReady == false)
@@ -275,34 +342,47 @@ namespace FluidSimulate
 
                 tempData.Dispose();
                 return;
-            }
+            }// 스폰된 위치 정보를 FluidSimlationComponent 에게 줌
 
             if (timer > Parameter.DT)
             {
                 timer = 0;
                 return;
-            }else
+            }
+            else
             {
                 timer += SystemAPI.Time.DeltaTime;
             }
+
+            #region 초기화
 
             NativeArray<FluidSimlationComponent> particleData =
                 ParticleGroup.ToComponentDataArray<FluidSimlationComponent>(Allocator.TempJob);
 
             int particleCount = particleData.Length;
 
+            NativeMultiHashMap<int, int> hashMap = new NativeMultiHashMap<int, int>(particleCount, Allocator.TempJob);
+
             var particleDir = new NativeArray<Vector3>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             var particleMoveRes = new NativeArray<float>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            NativeArray<int> particleIndices = new NativeArray<int>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            NativeArray<int> cellOffsetTableNative = new NativeArray<int>(cellOffsetTable, Allocator.TempJob);
+            #endregion
 
-            //-------
+            #region 설정
 
-            var particleDirJob = new MemsetNativeArray<Vector3> { Source = particleDir, Value = Vector3.zero};
+            var particleDirJob = new MemsetNativeArray<Vector3> { Source = particleDir, Value = Vector3.zero };
             JobHandle particleDirJobHandle = particleDirJob.Schedule(particleCount, 64);
             var particleMoveResJob = new MemsetNativeArray<float> { Source = particleMoveRes, Value = 0 };
             JobHandle particleMoveResJobHandle = particleMoveResJob.Schedule(particleCount, 64);
 
             JobHandle SetupMergedHandle = JobHandle.CombineDependencies(PositionSetupHandle, particleDirJobHandle, particleMoveResJobHandle);
-            //------
+
+            MemsetNativeArray<int> particleIndicesJob = new MemsetNativeArray<int> { Source = particleIndices, Value = 0 };
+            JobHandle particleIndicesJobHandle = particleIndicesJob.Schedule(particleCount, 64);
+            //----------> particleIndices : 해당영역에 첫번째 파티클 / 딱히 쓰는데 없는데
+
+            //-----
 
             ResetAcc ResetAccJob = new ResetAcc
             {
@@ -312,26 +392,53 @@ namespace FluidSimulate
             };
             JobHandle ResetAccHandle = ResetAccJob.ScheduleParallel(ParticleGroup, SetupMergedHandle);
 
-            //ResetAccHandle.Complete();//------------- 추가하니 왜 프레임 증가? / 이젠 이것때문에 프레임 감소 (기다리는것 때문)
-            Debugging(particleData, particleDir, particleMoveRes, "Reset");
+            // Put positions into a hashMap
+            HashPositions hashPositionsJob = new HashPositions
+            {
+                //positions = particlesPosition,
+                particleData = particleData,
+                hashMap = hashMap.AsParallelWriter(),
+                cellRadius = Parameter.ParticleRadius
+            };
+
+            //particlePosition 이 완료되고 실행
+            JobHandle hashPositionsJobHandle = hashPositionsJob.Schedule(particleCount, 64, ResetAccHandle);
+            //이걸쓰는 job이 hashPositionJob 과 particleIndicesJob 끝나야 실행되게
+            JobHandle mergedPositionIndicesJobHandle = JobHandle.CombineDependencies(hashPositionsJobHandle, particleIndicesJobHandle);
+
+            MergeParticles mergeParticlesJob = new MergeParticles
+            {
+                particleIndices = particleIndices
+            };
+
+            //이 작업의 목적은 각 입자에 hashMap 버킷의 ID를 부여하는 것입니다.
+            JobHandle mergeParticlesJobHandle = mergeParticlesJob.Schedule(hashMap, 64, mergedPositionIndicesJobHandle);
+            // 입자간 충돌 사전 작업완료
+            mergeParticlesJobHandle.Complete();
+
+            #endregion
+
+            #region Calculation Job
+            //computePressureJob + computeDensityPressureJob
 
             ComputePressure computePressureJob = new ComputePressure
             {
+                hashMap = hashMap,
+                cellOffsetTable = cellOffsetTableNative,
                 particleData = particleData,
+                parameter = Parameter,
                 pressureDir = particleDir,
-                moveRes = particleMoveRes,
-                Amount = particleCount,
-                parameter = Parameter
+                moveRes = particleMoveRes
             };
-            JobHandle computePressureHandle = computePressureJob.Schedule(particleCount, 64, ResetAccHandle);
+            JobHandle computePressureJobHandle = computePressureJob.Schedule(particleCount, 64, mergeParticlesJobHandle);
 
             ComputeFloorCollision FloorCollisionJob = new ComputeFloorCollision
             {
                 particleData = particleData,
                 parameter = Parameter
             };
-            JobHandle FloorCollisionHandle = FloorCollisionJob.Schedule(particleCount, 64, computePressureHandle);
-            
+            JobHandle FloorCollisionHandle = FloorCollisionJob.Schedule(particleCount, 64, computePressureJobHandle);
+
             ComputeCollision ComputeCollisionJob = new ComputeCollision
             {
                 particleData = particleData,
@@ -341,10 +448,7 @@ namespace FluidSimulate
                 parameter = Parameter
             };
             JobHandle ComputeCollisionHandle = ComputeCollisionJob.Schedule(particleCount, 64, FloorCollisionHandle);
-
             ComputeCollisionHandle.Complete();
-            Debugging(particleData, particleDir, particleMoveRes, "Before AddPos");
-            
 
             AddPosition AddPositionJob = new AddPosition
             {
@@ -358,38 +462,20 @@ namespace FluidSimulate
             //JobHandle ApplyPositionHandle = ApplyPositionJob.ScheduleParallel(ParticleGroup, AddPositionHandle);
             ApplyPositionJob.ScheduleParallel(ParticleGroup);
 
-            //------
-            //ApplyPositionHandle.Complete();
+            #endregion
 
-            //Dependency = ApplyPositionHandle;
+            //Dependency = AddPositionHandle;
 
-            Debugging(particleData, particleDir, particleMoveRes,"End");
-
-            particleData.Dispose();
-            particleDir.Dispose();
-            particleMoveRes.Dispose();
-        }
-
-        void Debugging(NativeArray<FluidSimlationComponent> particleData, NativeArray<Vector3> dir, NativeArray<float> res, string vaule = "")
-        {
-            /*
-            if (particleData.Length > 0)
             {
-                var tempData = ParticleGroup.ToComponentDataArray<FluidSimlationComponent>(Allocator.TempJob);
-                var temp = tempData.ToArray()[0];
-                var temp2 = particleData.ToArray()[0];
-                var IsNan = (float.IsNaN(temp2.velocity.x) || float.IsNaN(temp2.velocity.y) || float.IsNaN(temp2.velocity.z));
-                Debug.Log(vaule + $" | Component  Pos : {temp.position} / Vel : {temp.velocity} / Acc : {temp.acc} " +
-                    $"\nData  Pos : {temp2.position} / Vel :{temp2.velocity} / Acc : {temp2.acc}" +
-                    $"\n Dir : {dir.ToArray()[0]} / Move Res : {res.ToArray()[0]} / Data Vel is : {(IsNan ? "Nan" : "Enable")}");
+                particleData.Dispose();
+                particleDir.Dispose();
+                particleMoveRes.Dispose();
 
-                //(float.IsNaN(data.velocity.x) || float.IsNaN(data.velocity.y) || float.IsNaN(data.velocity.z))
+                hashMap.Dispose();
+                particleIndices.Dispose();
+                cellOffsetTableNative.Dispose();
             }
-            else
-            {
-                Debug.Log("particleData is null");
-            }*/
         }
-        //Disabled
     }
 }
+

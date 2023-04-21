@@ -5,9 +5,11 @@ using Unity.Entities;
 
 namespace FluidSimulate
 {
+    public enum SimulationType { ECS , HashedECS};
     public class ParticleParameter : MonoBehaviour
     {
         public float particleRadius = 1f;
+        public float smoothRadius = 0f;
         //public float restDensity;
         public Vector3 gravity = new Vector3(0, -9.81f, 0);
         //public float particleMass;
@@ -18,11 +20,19 @@ namespace FluidSimulate
 
         public AnimationCurve collisionPushMultiply = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1, 10));
         public float collisionPush = 0.1f;
+        [Space(10)]
+        public SimulationType simulationType;
+
+        public void Start()
+        {
+            
+        }
     }
 
     public struct ParticleParameterComponent : IComponentData
     {
         public float ParticleRadius;
+        public float SmoothRadius;
         //public float restDensity;
         public Vector3 Gravity;
         //public float particleMass;
@@ -33,6 +43,8 @@ namespace FluidSimulate
         public float CollisionPush;
         public Keyframe CollisionPushStart;
         public Keyframe CollisionPushEnd;
+
+        public SimulationType simulationType;
 
         public static float Evaluate(float t, Keyframe keyframe0, Keyframe keyframe1)
         {
@@ -77,6 +89,7 @@ namespace FluidSimulate
             AddComponent(new ParticleParameterComponent
             {
                 ParticleRadius = authoring.particleRadius,
+                SmoothRadius = authoring.smoothRadius,
                 Gravity = authoring.gravity,
                 ParticleViscosity = authoring.particleViscosity,
                 ParticleDrag = authoring.particleDrag,
@@ -87,6 +100,8 @@ namespace FluidSimulate
                     authoring.collisionPushMultiply.keys.Length >= 2 ? authoring.collisionPushMultiply.keys[0] : default,
                 CollisionPushEnd =
                     authoring.collisionPushMultiply.keys.Length >= 2 ? authoring.collisionPushMultiply.keys[1] : default,
+
+                simulationType = authoring.simulationType
             });;
         }
     }

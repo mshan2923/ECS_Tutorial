@@ -31,17 +31,22 @@ public partial class SPHManagerSystem : SystemBase
                 Debug.Log("Spawning");
 
                 var random = new Random(1);
+                int size = Mathf.FloorToInt(Mathf.Pow(manager.Amount, 1/3f));
+
                 for (int i = 0; i < manager.Amount; i++)
                 {
                         // entity 생성 예약
                         var instance = commandBuffer.Instantiate(entityInQueryIndex, manager.Particle);
                         
-                        var position = new float3((i % 16) * 1.2f + random.NextFloat(-0.1f, 0.1f),
-                             2 + (i / 16 / 16) * 1.1f,
-                              ((i / 16) % 16) * 1.2f + random.NextFloat(-0.1f, 0.1f)) + trans.Position;                     
-                       
-                       
-                        commandBuffer
+                        //var position = new float3((i % 16) * 1.2f + random.NextFloat(-0.1f, 0.1f),
+                        //     2 + (i / 16 / 16) * 1.1f,
+                        //      ((i / 16) % 16) * 1.2f + random.NextFloat(-0.1f, 0.1f)) + trans.Position;
+                    var position = new float3((i % size) * 1.2f + random.NextFloat(-0.1f, 0.1f),
+                                2 + (i / size / size) * 1.1f,
+                                ((i / size) % size) * 1.2f + random.NextFloat(-0.1f, 0.1f)) + trans.Position;
+
+                    
+                    commandBuffer
                         .SetComponent(entityInQueryIndex, instance,
                             new LocalTransform {Position = position, Rotation = quaternion.identity, Scale = 1});
 
