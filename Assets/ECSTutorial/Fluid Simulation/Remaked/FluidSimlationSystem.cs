@@ -66,12 +66,12 @@ namespace FluidSimulate
             {
                 for (int j = 0; j < Amount; j++)
                 {
-                    var ij = particleData[index].position - particleData[j].position;
+                    var ij = particleData[j].position - particleData[index].position;//particleData[index].position - particleData[j].position;
                     var rad = parameter.ParticleRadius + parameter.SmoothRadius;
                     if (ij.sqrMagnitude <= rad * rad)
                     {
                         pressureDir[index] += ij;
-                        moveRes[index] += Mathf.Clamp01(Vector3.Dot(ij.normalized, -(particleData[index].velocity + particleData[index].acc * parameter.DT)));
+                        moveRes[index] += Mathf.Clamp01(Vector3.Dot(-ij.normalized, -(particleData[index].velocity + particleData[index].acc * parameter.DT)));
                     }
                 }
             }
@@ -155,19 +155,23 @@ namespace FluidSimulate
                         else
                         {
                             var CollisionRate = (parameter.ParticleRadius - pressureDir[index].magnitude) / parameter.ParticleRadius;
-                            temp.velocity -= parameter.Evaluate(CollisionRate) *
+                            temp.velocity += parameter.Evaluate(CollisionRate) *
                                  parameter.CollisionPush * pressureDir[index].normalized;
 
-                            //var reflectVel = temp.velocity * (1 - parameter.ParticleViscosity);// Legacy
-                            var reflectVel = temp.velocity - (parameter.DT * CollisionAcc * temp.velocity);
+                            if (Mathf.Abs(moveRes[index]) > 0.1f)
+                            {
+                                //var reflectVel = temp.velocity * (1 - parameter.ParticleViscosity);// Legacy
+                                var reflectVel = temp.velocity * (1 - parameter.ParticleViscosity);
+                                //      (parameter.DT * CollisionAcc * temp.velocity);
 
-                            if (moveRes[index] >= 0)
-                            {
-                                temp.velocity = Vector3.Reflect((reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
-                            }
-                            else
-                            {
-                                temp.velocity = Vector3.Reflect((-reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                if (moveRes[index] >= 0)
+                                {
+                                    temp.velocity = Vector3.Reflect((reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                }
+                                else
+                                {
+                                    temp.velocity = Vector3.Reflect((-reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                }
                             }
                         }
                     }

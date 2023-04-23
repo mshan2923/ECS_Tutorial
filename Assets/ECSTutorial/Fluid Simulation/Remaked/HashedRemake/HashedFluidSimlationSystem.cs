@@ -128,7 +128,7 @@ namespace FluidSimulate
                     while (found)
                     {
                         // Neighbor found, get density
-                        var rij = position - particleData[j].position;
+                        var rij = particleData[j].position - position;//position - particleData[j].position;
                         float r2 = math.lengthsq(rij);
 
                         if (r2 < parameter.ParticleRadius + parameter.SmoothRadius)
@@ -137,7 +137,7 @@ namespace FluidSimulate
                             //  * math.pow(settings.smoothingRadiusSq - r2, 3.0f);
 
                             pressureDir[index] += rij;
-                            moveRes[index] += Mathf.Clamp01(Vector3.Dot(rij.normalized, -(particleData[index].velocity + particleData[index].acc * parameter.DT)));
+                            moveRes[index] += Mathf.Clamp01(Vector3.Dot(-rij.normalized, -(particleData[index].velocity + particleData[index].acc * parameter.DT)));
                         }
 
                         // Next neighbor
@@ -227,19 +227,22 @@ namespace FluidSimulate
                         else
                         {
                             var CollisionRate = (parameter.ParticleRadius - pressureDir[index].magnitude) / parameter.ParticleRadius;
-                            temp.velocity -= parameter.Evaluate(CollisionRate) *
+                            temp.velocity += parameter.Evaluate(CollisionRate) *
                                  parameter.CollisionPush * pressureDir[index].normalized;
 
-                            //var reflectVel = temp.velocity * (1 - parameter.ParticleViscosity);// Legacy
-                            var reflectVel = temp.velocity - (parameter.DT * CollisionAcc * temp.velocity);
+                            if (Mathf.Abs(moveRes[index]) > 0.1f)
+                            {
+                                var reflectVel = temp.velocity * (1 - parameter.ParticleViscosity);
+                                //(parameter.DT * CollisionAcc * temp.velocity);
 
-                            if (moveRes[index] >= 0)
-                            {
-                                temp.velocity = Vector3.Reflect((reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
-                            }
-                            else
-                            {
-                                temp.velocity = Vector3.Reflect((-reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                if (moveRes[index] >= 0)
+                                {
+                                    temp.velocity = Vector3.Reflect((reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                }
+                                else
+                                {
+                                    temp.velocity = Vector3.Reflect((-reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                }
                             }
                         }
                     }
@@ -365,7 +368,7 @@ namespace FluidSimulate
 
             var particleDir = new NativeArray<Vector3>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             var particleMoveRes = new NativeArray<float>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-            NativeArray<int> particleIndices = new NativeArray<int>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            ///NativeArray<int> particleIndices = new NativeArray<int>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             NativeArray<int> cellOffsetTableNative = new NativeArray<int>(cellOffsetTable, Allocator.TempJob);
             #endregion
 
@@ -378,8 +381,8 @@ namespace FluidSimulate
 
             JobHandle SetupMergedHandle = JobHandle.CombineDependencies(PositionSetupHandle, particleDirJobHandle, particleMoveResJobHandle);
 
-            MemsetNativeArray<int> particleIndicesJob = new MemsetNativeArray<int> { Source = particleIndices, Value = 0 };
-            JobHandle particleIndicesJobHandle = particleIndicesJob.Schedule(particleCount, 64);
+            ///MemsetNativeArray<int> particleIndicesJob = new MemsetNativeArray<int> { Source = particleIndices, Value = 0 };
+            ///JobHandle particleIndicesJobHandle = particleIndicesJob.Schedule(particleCount, 64);
             //----------> particleIndices : 해당영역에 첫번째 파티클 / 딱히 쓰는데 없는데
 
             //-----
@@ -404,18 +407,18 @@ namespace FluidSimulate
             //particlePosition 이 완료되고 실행
             JobHandle hashPositionsJobHandle = hashPositionsJob.Schedule(particleCount, 64, ResetAccHandle);
             //이걸쓰는 job이 hashPositionJob 과 particleIndicesJob 끝나야 실행되게
-            JobHandle mergedPositionIndicesJobHandle = JobHandle.CombineDependencies(hashPositionsJobHandle, particleIndicesJobHandle);
+            ///JobHandle mergedPositionIndicesJobHandle = JobHandle.CombineDependencies(hashPositionsJobHandle, particleIndicesJobHandle);
 
-            MergeParticles mergeParticlesJob = new MergeParticles
-            {
-                particleIndices = particleIndices
-            };
+            ///MergeParticles mergeParticlesJob = new MergeParticles
+            ///{
+            ///     particleIndices = particleIndices
+            ///};
 
             //이 작업의 목적은 각 입자에 hashMap 버킷의 ID를 부여하는 것입니다.
-            JobHandle mergeParticlesJobHandle = mergeParticlesJob.Schedule(hashMap, 64, mergedPositionIndicesJobHandle);
-            // 입자간 충돌 사전 작업완료
-            mergeParticlesJobHandle.Complete();
+            ///JobHandle mergeParticlesJobHandle = mergeParticlesJob.Schedule(hashMap, 64, mergedPositionIndicesJobHandle);
+            ///mergeParticlesJobHandle.Complete();
 
+            // 입자간 충돌 사전 작업완료
             #endregion
 
             #region Calculation Job
@@ -430,7 +433,7 @@ namespace FluidSimulate
                 pressureDir = particleDir,
                 moveRes = particleMoveRes
             };
-            JobHandle computePressureJobHandle = computePressureJob.Schedule(particleCount, 64, mergeParticlesJobHandle);
+            JobHandle computePressureJobHandle = computePressureJob.Schedule(particleCount, 64, hashPositionsJobHandle);// mergeParticlesJobHandle);
 
             ComputeFloorCollision FloorCollisionJob = new ComputeFloorCollision
             {
@@ -472,7 +475,7 @@ namespace FluidSimulate
                 particleMoveRes.Dispose();
 
                 hashMap.Dispose();
-                particleIndices.Dispose();
+                //particleIndices.Dispose();
                 cellOffsetTableNative.Dispose();
             }
         }

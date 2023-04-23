@@ -223,13 +223,13 @@ public class MonoFluidSystem : MonoBehaviour
 
                 for (int j = 0; j < particles.Length; j++)
                 {
-                    var ij = particles[i].position - particles[j].position;
+                    var ij = particles[j].position - particles[i].position;//particles[i].position - particles[j].position;
                     var rad = parameters[parameterID].particleRadius + parameters[parameterID].smoothingRadius;
                     if ((ij).sqrMagnitude <= rad * rad)
                     {
                         dir += ij;
 
-                        MoveResistance += Mathf.Clamp01(Vector3.Dot(ij.normalized, -(particles[i].velocity + particles[i].Acc * DT).normalized));
+                        MoveResistance += Mathf.Clamp01(Vector3.Dot(-ij.normalized, -(particles[i].velocity + particles[i].Acc * DT).normalized));
                     }
                 }
 
@@ -287,16 +287,20 @@ public class MonoFluidSystem : MonoBehaviour
                         {
                             var CollisionRate = (parameters[parameterID].particleRadius - dir.magnitude) / parameters[parameterID].particleRadius;
 
-                            particles[i].velocity -= CollisionPushMultiply.Evaluate(CollisionRate) * CollsionPush * dir.normalized;//´ç±è
+                            particles[i].velocity += CollisionPushMultiply.Evaluate(CollisionRate) * CollsionPush * dir.normalized;//´ç±è
 
-                            var reflecVel = particles[i].velocity * (1 - parameters[parameterID].particleViscosity);
+                            if (Mathf.Abs(MoveResistance) > 0.1f)
+                            {
+                                var reflecVel = particles[i].velocity * (1 - parameters[parameterID].particleViscosity);
 
-                            if (MoveResistance >= 0)
-                            {
-                                particles[i].velocity = Vector3.Reflect((reflecVel + particles[i].Acc * DT), dir.normalized);//Ãæµ¹
-                            }else
-                            {
-                                particles[i].velocity = Vector3.Reflect((-reflecVel + particles[i].Acc * DT), dir.normalized);
+                                if (MoveResistance >= 0)
+                                {
+                                    particles[i].velocity = Vector3.Reflect((reflecVel + particles[i].Acc * DT), dir.normalized);//Ãæµ¹
+                                }
+                                else
+                                {
+                                    particles[i].velocity = Vector3.Reflect((-reflecVel + particles[i].Acc * DT), dir.normalized);
+                                }
                             }
                         }
                     }

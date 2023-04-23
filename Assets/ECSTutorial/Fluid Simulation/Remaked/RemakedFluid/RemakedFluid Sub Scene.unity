@@ -215,7 +215,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  collisionPush: 0.01
+  collisionPush: 0.001
+  simulationType: 0
 --- !u!114 &434548034
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -230,5 +231,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particleObj: {fileID: 4119383697818013576, guid: b496664dad088904cb87f87ded1320e2,
     type: 3}
-  Amount: 1000
-  RandomPower: 0.1
+  Amount: 2000
+  RandomPower: 1

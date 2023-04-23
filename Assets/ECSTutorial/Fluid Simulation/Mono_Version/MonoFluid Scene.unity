@@ -697,6 +697,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   CollsionPush: 0.1
-  amount: 128
+  amount: 400
   rowSize: 4
-  _debugIndex: 15
+  _debugIndex: 16
