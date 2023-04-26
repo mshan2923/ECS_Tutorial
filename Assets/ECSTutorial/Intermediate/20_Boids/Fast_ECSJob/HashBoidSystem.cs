@@ -42,7 +42,7 @@ namespace Tutorial.FastBiods
         [BurstCompile]
         partial struct HashPositionToHashMap : IJobEntity
         {
-            public NativeMultiHashMap<int, int>.ParallelWriter hashMap;
+            public NativeParallelMultiHashMap<int, int>.ParallelWriter hashMap;
             [ReadOnly] public quaternion cellRotationVary;
             [ReadOnly] public float3 positionOffsetVary;
             [ReadOnly] public float cellRadius;
@@ -218,12 +218,13 @@ namespace Tutorial.FastBiods
 
             int boidCount = boidGroup.CalculateEntityCount();
             if (boidCount == 0)
-            {
+            {                
                 boidGroup = GetEntityQuery(new EntityQueryDesc 
                 {
                     All = new[] { ComponentType.ReadOnly<FastBoidTag>(), ComponentType.ReadWrite<LocalTransform>() },
                     Options = EntityQueryOptions.FilterWriteGroup
                 });
+                //------- boidGroup 설정이 문제가 있는데?
                 Debug.Log("boidCount is 0");
                 return;
             }
@@ -232,13 +233,13 @@ namespace Tutorial.FastBiods
             var cellBoidCount = new NativeArray<int>(boidCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             var boidPositions = new NativeArray<float3>(boidCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             var boidHeadings = new NativeArray<float3>(boidCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-            var hashMap = new NativeMultiHashMap<int, int>(boidCount, Allocator.TempJob);
+            var hashMap = new NativeParallelMultiHashMap<int, int>(boidCount, Allocator.TempJob);
 
             var positionsAndHeadingsCopyJob = new CopyPositionsAndHeadingsInBuffer {
                 boidPositions = boidPositions,
                 boidHeadings = boidHeadings
             };
-            JobHandle positionAndHeadingsCopyJobHandle = positionsAndHeadingsCopyJob.ScheduleParallel(boidGroup, Dependency);
+            JobHandle positionAndHeadingsCopyJobHandle = positionsAndHeadingsCopyJob.ScheduleParallel( Dependency);//boidGroup,
 
 
             quaternion randomHashRotation = quaternion.Euler(
@@ -259,7 +260,7 @@ namespace Tutorial.FastBiods
                 positionOffsetVary = randomHashOffset,
                 cellRadius = controller.boidPerceptionRadius,
             };
-            JobHandle hashPositionJobHandle = hashPositionsJob.ScheduleParallel(boidGroup, Dependency);
+            JobHandle hashPositionJobHandle = hashPositionsJob.ScheduleParallel( Dependency);//boidGroup,
 
 
             // Proceed when these two jobs have been completed
@@ -303,7 +304,7 @@ namespace Tutorial.FastBiods
                 headingSumsOfCells = boidHeadings,
                 cellBoidCount = cellBoidCount,
             };
-            JobHandle moveJobHandle = moveJob.ScheduleParallel(boidGroup, mergeCellJobHandle);
+            JobHandle moveJobHandle = moveJob.ScheduleParallel( mergeCellJobHandle);//boidGroup,
             moveJobHandle.Complete();
 
             {

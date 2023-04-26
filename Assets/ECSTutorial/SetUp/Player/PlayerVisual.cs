@@ -19,7 +19,7 @@ public class PlayerVisual : MonoBehaviour
         if (targetEntity != Entity.Null)
         {
             Vector3 followPosition =
-                World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentData<WorldTransform>(targetEntity)._Position;
+                World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentData<LocalTransform>(targetEntity).Position;//World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentData<WorldTransform>(targetEntity)._Position;
             transform.position = followPosition;
         }//선택된 엔티티 따라가게
     }

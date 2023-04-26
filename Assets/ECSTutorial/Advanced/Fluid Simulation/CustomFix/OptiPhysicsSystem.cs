@@ -48,7 +48,7 @@ public partial class OptiPhysicsSystem : SystemBase
     };
     private struct PreviousParticle
     {
-        public NativeMultiHashMap<int, int> hashMap;
+        public NativeParallelMultiHashMap<int, int> hashMap;
         public NativeArray<LocalTransform> particlesPosition;
         public NativeArray<SPHVelocityComponent> particlesVelocity;
         public NativeArray<float3> particlesForces;
@@ -68,7 +68,7 @@ public partial class OptiPhysicsSystem : SystemBase
         [ReadOnly] public float cellRadius;
 
         public NativeArray<LocalTransform> positions;
-        public NativeMultiHashMap<int, int>.ParallelWriter hashMap;
+        public NativeParallelMultiHashMap<int, int>.ParallelWriter hashMap;
         //#pragma warning restore 0649
 
         public void Execute(Entity e, [EntityIndexInQuery] int index, in SPHParticleComponent particle)
@@ -110,7 +110,7 @@ public partial class OptiPhysicsSystem : SystemBase
     private partial struct ComputeDensityPressure : IJobEntity
     {
         //#pragma warning disable 0649
-        [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+        [ReadOnly] public NativeParallelMultiHashMap<int, int> hashMap;
         [ReadOnly] public NativeArray<int> cellOffsetTable;
         [ReadOnly] public NativeArray<LocalTransform> particlesPosition;
         [ReadOnly] public SPHParticleComponent settings;
@@ -141,7 +141,7 @@ public partial class OptiPhysicsSystem : SystemBase
                 i = oi * 3;
                 gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
                 hash = GridHash.Hash(gridPosition + gridOffset);
-                NativeMultiHashMapIterator<int> iterator;
+                NativeParallelMultiHashMapIterator<int> iterator;
                 found = hashMap.TryGetFirstValue(hash, out j, out iterator);
                 while (found)
                 {
@@ -172,7 +172,7 @@ public partial class OptiPhysicsSystem : SystemBase
     private partial struct ComputeForces : IJobEntity
     {
         //#pragma warning disable 0649
-        [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+        [ReadOnly] public NativeParallelMultiHashMap<int, int> hashMap;
         [ReadOnly] public NativeArray<int> cellOffsetTable;
         [ReadOnly] public NativeArray<LocalTransform> particlesPosition;
         [ReadOnly] public NativeArray<SPHVelocityComponent> particlesVelocity;
@@ -209,7 +209,7 @@ public partial class OptiPhysicsSystem : SystemBase
                 i = oi * 3;
                 gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
                 hash = GridHash.Hash(gridPosition + gridOffset);
-                NativeMultiHashMapIterator<int> iterator;
+                NativeParallelMultiHashMapIterator<int> iterator;
                 found = hashMap.TryGetFirstValue(hash, out j, out iterator);
                 while (found)
                 {
@@ -373,7 +373,7 @@ public partial class OptiPhysicsSystem : SystemBase
     [BurstCompile]
     private partial struct TempCollisionFloor : IJobEntity
     {
-        [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+        [ReadOnly] public NativeParallelMultiHashMap<int, int> hashMap;
         [ReadOnly] public NativeArray<LocalTransform> particlesPosition;
         public NativeArray<SPHVelocityComponent> particlesVelocity;
 
@@ -430,7 +430,7 @@ public partial class OptiPhysicsSystem : SystemBase
                     i = oi * 3;
                     gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
                     hash = GridHash.Hash(gridPosition + gridOffset);
-                    NativeMultiHashMapIterator<int> iterator;
+                    NativeParallelMultiHashMapIterator<int> iterator;
                     found = hashMap.TryGetFirstValue(hash, out j, out iterator);
 
                     while(found)
@@ -598,7 +598,7 @@ public partial class OptiPhysicsSystem : SystemBase
                 //int particleCount = Mathf.Min(particlesPosition.Length, Mathf.RoundToInt(lifetime * 10));//=========== 왜 ... 휴무시간이 엄청길어지지?
                 
 
-                NativeMultiHashMap<int, int> hashMap = new NativeMultiHashMap<int, int>(particleCount, Allocator.TempJob);
+                NativeParallelMultiHashMap<int, int> hashMap = new NativeParallelMultiHashMap<int, int>(particleCount, Allocator.TempJob);
 
                 NativeArray<float3> particlesForces = new NativeArray<float3>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
                 NativeArray<float> particlesPressure = new NativeArray<float>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);

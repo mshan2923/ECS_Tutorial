@@ -32,7 +32,7 @@ public partial class SPHSystem : SystemBase
     private struct PreviousParticle
     {
         //#pragma warning disable 0649
-        public NativeMultiHashMap<int, int> hashMap;
+        public NativeParallelMultiHashMap<int, int> hashMap;        
         public NativeArray<LocalTransform> particlesPosition;
         public NativeArray<SPHVelocityComponent> particlesVelocity;
         public NativeArray<float3> particlesForces;
@@ -51,7 +51,7 @@ public partial class SPHSystem : SystemBase
         [ReadOnly] public float cellRadius;
 
         public NativeArray<LocalTransform> positions;
-        public NativeMultiHashMap<int, int>.ParallelWriter hashMap;
+        public NativeParallelMultiHashMap<int, int>.ParallelWriter hashMap;
         //#pragma warning restore 0649
 
         public void Execute(int index)
@@ -91,7 +91,7 @@ public partial class SPHSystem : SystemBase
     private struct ComputeDensityPressure : IJobParallelFor
     {
         //#pragma warning disable 0649
-        [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+        [ReadOnly] public NativeParallelMultiHashMap<int, int> hashMap;
         [ReadOnly] public NativeArray<int> cellOffsetTable;
         [ReadOnly] public NativeArray<LocalTransform> particlesPosition;
         [ReadOnly] public SPHParticleComponent settings;
@@ -122,7 +122,7 @@ public partial class SPHSystem : SystemBase
                 i = oi * 3;
                 gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
                 hash = GridHash.Hash(gridPosition + gridOffset);
-                NativeMultiHashMapIterator<int> iterator;
+                NativeParallelMultiHashMapIterator<int> iterator;
                 found = hashMap.TryGetFirstValue(hash, out j, out iterator);
                 while (found)
                 {
@@ -151,7 +151,7 @@ public partial class SPHSystem : SystemBase
     private struct ComputeForces : IJobParallelFor
     {
         //#pragma warning disable 0649
-        [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+        [ReadOnly] public NativeParallelMultiHashMap<int, int> hashMap;
         [ReadOnly] public NativeArray<int> cellOffsetTable;
         [ReadOnly] public NativeArray<LocalTransform> particlesPosition;
         [ReadOnly] public NativeArray<SPHVelocityComponent> particlesVelocity;
@@ -188,7 +188,7 @@ public partial class SPHSystem : SystemBase
                 i = oi * 3;
                 gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
                 hash = GridHash.Hash(gridPosition + gridOffset);
-                NativeMultiHashMapIterator<int> iterator;
+                NativeParallelMultiHashMapIterator<int> iterator;
                 found = hashMap.TryGetFirstValue(hash, out j, out iterator);
                 while (found)
                 {
@@ -392,7 +392,7 @@ public partial class SPHSystem : SystemBase
                         int cacheIndex = typeIndex - 1;
                 int particleCount = particlesPosition.Length;
 
-                NativeMultiHashMap<int, int> hashMap = new NativeMultiHashMap<int, int>(particleCount, Allocator.TempJob);
+                NativeParallelMultiHashMap<int, int> hashMap = new NativeParallelMultiHashMap<int, int>(particleCount, Allocator.TempJob);
 
                 NativeArray<float3> particlesForces = new NativeArray<float3>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
                 NativeArray<float> particlesPressure = new NativeArray<float>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);

@@ -30,7 +30,8 @@ namespace Tutorial.JobEntity
                 random = new Unity.Mathematics.Random(64562),
                 ECB = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>().CreateCommandBuffer().AsParallelWriter()
             };
-            setup.ScheduleParallel();
+            var setupHandle = setup.ScheduleParallel(Dependency);
+            setupHandle.Complete();
         }
         protected override void OnUpdate()
         {

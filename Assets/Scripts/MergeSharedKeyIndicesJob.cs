@@ -11,7 +11,7 @@ namespace Samples.Boids
     // IJobNativeMultiHashMapMergedSharedKeyIndices: custom job type, following its own defined custom safety rules:
     // A) because we know how hashmap safety works, B) we can iterate safely in parallel
     // Notable Features:
-    // 1) The hash map must be a NativeMultiHashMap<int,int>, where the key is a hash of some data, and the index is
+    // 1) The hash map must be a NativeParallelMultiHashMap<int,int>, where the key is a hash of some data, and the index is
     // a unique index (generally to the relevant data in some other collection).
     // 2) Each bucket is processed concurrently with other buckets.
     // 3) All key/value pairs in each bucket are processed individually (in sequential order) by a single thread.
@@ -31,7 +31,7 @@ namespace Samples.Boids
     {
         internal struct JobWrapper<T> where T : struct
         {
-            [ReadOnly] public NativeMultiHashMap<int, int> HashMap;
+            [ReadOnly] public NativeParallelMultiHashMap<int, int> HashMap;
             public T JobData;
         }
 
@@ -50,7 +50,7 @@ namespace Samples.Boids
             JobNativeMultiHashMapMergedSharedKeyIndicesProducer<T>.Initialize();
         }
 
-        public static unsafe JobHandle Schedule<T>(this T jobData, NativeMultiHashMap<int, int> hashMap,
+        public static unsafe JobHandle Schedule<T>(this T jobData, NativeParallelMultiHashMap<int, int> hashMap,
                 int minIndicesPerJobCount, JobHandle dependsOn = default)
             where T : struct, IJobNativeMultiHashMapMergedSharedKeyIndices
         {
@@ -119,7 +119,7 @@ namespace Samples.Boids
                             var value = UnsafeUtility.ReadArrayElement<int>(values, entryIndex);
                             int firstValue;
 
-                            NativeMultiHashMapIterator<int> it;
+                            NativeParallelMultiHashMapIterator<int> it;
                             jobWrapper.HashMap.TryGetFirstValue(key, out firstValue, out it);
 
                             // [macton] Didn't expect a usecase for this with multiple same values

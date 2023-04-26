@@ -90,6 +90,8 @@ public partial class PhysicsSpawnerSystem : SystemBase
                     }
                 }
             }).Schedule();
+
+            entityCommandBufferSystem.AddJobHandleForProducer(Dependency);
         }
     }
     protected override void OnUpdate()

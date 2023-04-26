@@ -54,7 +54,7 @@ public partial struct MoveJob : IJobEntity
     [BurstCompile]
     public void Execute(MoveToPositionAspect moveToPositionAspect)
     {
-        moveToPositionAspect.Move(SystemAPI.Time.DeltaTime);
+        moveToPositionAspect.Move(deltaTime);
     }
 }
 [BurstCompile]

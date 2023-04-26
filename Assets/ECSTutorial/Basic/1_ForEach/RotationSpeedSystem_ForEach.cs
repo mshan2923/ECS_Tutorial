@@ -21,7 +21,7 @@ public partial class RotationSpeedSystem_ForEach : SystemBase
                 {// 항상 ref 다음에 in 이 있어야함 , ref는 쓸 대상 , in은 읽을대상 / 스레드에서 동시에 실행시키기위해 
                     transform.Rotation = math.mul
                     (
-                        math.normalize(transform._Rotation.value),
+                        math.normalize(transform.Rotation),//math.normalize(transform._Rotation.value),
                         quaternion.AxisAngle(math.up(), rotationSpeed.RadiusPerSpeed * deltaTime)
                     );
                 }

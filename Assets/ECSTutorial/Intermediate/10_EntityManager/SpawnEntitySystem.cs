@@ -56,7 +56,7 @@ namespace Tutorial.EntityManager
         }
         if (Input.GetKeyDown(KeyCode.A))
         {
-            EntityManager.DestroyAndResetAllEntities();
+            //EntityManager.DestroyAndResetAllEntities();
         }
     }
 

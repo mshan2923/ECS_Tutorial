@@ -33,7 +33,7 @@ namespace Tutorial.ClickToSelect
             return;
             
             camera = Camera.main;
-            selectionArchetype = EntityManager.CreateArchetype(typeof(PhysicsCollider), typeof(SelectionColliderTag), typeof(PhysicsWorldIndex), typeof(WorldTransform));
+            selectionArchetype = EntityManager.CreateArchetype(typeof(PhysicsCollider), typeof(SelectionColliderTag), typeof(PhysicsWorldIndex), typeof(LocalTransform));// WorldTransform
             //LocalToWorld 때문에 'The UNKNOWN_OBJECT_TYPE has been deallocated' 발생
             if (SystemAPI.HasSingleton<PhysicsWorldSingleton>())
             {
@@ -233,7 +233,7 @@ namespace Tutorial.ClickToSelect
             EntityManager.AddComponent<SelectableUnitTag>(SelecterEntity);
             EntityManager.AddComponent<SelectionColliderTag>(SelecterEntity);
 
-            EntityManager.AddComponentData(SelecterEntity, new WorldTransform 
+            EntityManager.AddComponentData(SelecterEntity, new LocalTransform //WorldTransform 
             {
                 Position = hit.point,
                 Rotation = quaternion.identity,

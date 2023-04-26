@@ -182,7 +182,7 @@ namespace Tutorial.Biods
 
             [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<float4x4> newBoidTransforms;
 
-            public void Execute(Entity boid, int boidIndex, [WriteOnly] ref LocalToWorld localToWorld)
+            public void Execute(Entity boid, [EntityIndexInQuery]int boidIndex, [WriteOnly] ref LocalToWorld localToWorld)
             {
                 localToWorld.Value = newBoidTransforms[boidIndex];
             }

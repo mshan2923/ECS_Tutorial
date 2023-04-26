@@ -41,7 +41,7 @@ namespace FluidSimulate
             //public NativeArray<LocalTransform> positions;
             [ReadOnly] public NativeArray<FluidSimlationComponent> particleData;
 
-            public NativeMultiHashMap<int, int>.ParallelWriter hashMap;
+            public NativeParallelMultiHashMap<int, int>.ParallelWriter hashMap;
             //#pragma warning restore 0649
 
             public void Execute(int index)
@@ -96,7 +96,7 @@ namespace FluidSimulate
         [BurstCompile]
         private struct ComputePressure : IJobParallelFor
         {
-            [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+            [ReadOnly] public NativeParallelMultiHashMap<int, int> hashMap;
             [ReadOnly] public NativeArray<int> cellOffsetTable;
             [ReadOnly] public NativeArray<FluidSimlationComponent> particleData;
 
@@ -123,7 +123,7 @@ namespace FluidSimulate
                     i = oi * 3;
                     gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
                     hash = GridHash.Hash(gridPosition + gridOffset);
-                    NativeMultiHashMapIterator<int> iterator;
+                    NativeParallelMultiHashMapIterator<int> iterator;
                     found = hashMap.TryGetFirstValue(hash, out j, out iterator);
                     while (found)
                     {
@@ -364,7 +364,7 @@ namespace FluidSimulate
 
             int particleCount = particleData.Length;
 
-            NativeMultiHashMap<int, int> hashMap = new NativeMultiHashMap<int, int>(particleCount, Allocator.TempJob);
+            NativeParallelMultiHashMap<int, int> hashMap = new NativeParallelMultiHashMap<int, int>(particleCount, Allocator.TempJob);
 
             var particleDir = new NativeArray<Vector3>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             var particleMoveRes = new NativeArray<float>(particleCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);

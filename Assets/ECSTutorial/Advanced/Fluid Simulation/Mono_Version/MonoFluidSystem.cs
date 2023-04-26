@@ -81,7 +81,7 @@ public class MonoFluidSystem : MonoBehaviour
     {
         public NativeArray<SPHParticle> datas;
         public float Radius;
-        public NativeMultiHashMap<int, int>.ParallelWriter hashMap;
+        public NativeParallelMultiHashMap<int, int>.ParallelWriter hashMap;
 
         public void Execute(int index)
         {
@@ -92,7 +92,7 @@ public class MonoFluidSystem : MonoBehaviour
     struct FindNeighbors : IJobParallelFor
     {
         [ReadOnly] public NativeArray<SPHParticle> datas;
-        [ReadOnly] public NativeMultiHashMap<int, int> hashMap;
+        [ReadOnly] public NativeParallelMultiHashMap<int, int> hashMap;
         [ReadOnly] public NativeArray<int> cellOffsetTable;
         [WriteOnly] public NativeArray<float3> Forces;
         [WriteOnly] public NativeArray<float3> Penetration;
@@ -114,7 +114,7 @@ public class MonoFluidSystem : MonoBehaviour
                 i = oi * 3;
                 gridOffset = new int3(cellOffsetTable[i], cellOffsetTable[i + 1], cellOffsetTable[i + 2]);
                 hash = GridHash.Hash(gridPosition + gridOffset);
-                NativeMultiHashMapIterator<int> iterator;
+                NativeParallelMultiHashMapIterator<int> iterator;
                 found = hashMap.TryGetFirstValue(hash, out j, out iterator);
                 while(found)
                 {
@@ -382,7 +382,7 @@ public class MonoFluidSystem : MonoBehaviour
         }
 
         {
-            var LhashMap = new NativeMultiHashMap<int, int>(amount, Allocator.TempJob);
+            var LhashMap = new NativeParallelMultiHashMap<int, int>(amount, Allocator.TempJob);
             var ParticleData = new NativeArray<SPHParticle>(particles, Allocator.TempJob);
             var SumForces = new NativeArray<float3>(amount, Allocator.TempJob);
             var SumPenetrat = new NativeArray<float3>(amount, Allocator.TempJob);
