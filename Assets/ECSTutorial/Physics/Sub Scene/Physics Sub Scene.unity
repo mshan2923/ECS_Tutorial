@@ -492,12 +492,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5459738151101778136, guid: c4aa70b4db8358942a496824f6af9d77, type: 3}
-  SpawnSize: {x: 12, y: 16, z: 12}
+  SpawnSize: {x: 12, y: 32, z: 12}
   Offset: {x: 0, y: 5, z: 0}
-  BetweenOffset: 1.5
+  BetweenOffset: 1
   IsSphere: 0
   IsHollow: 0
-  Amount: 2304
+  Amount: 4608
 --- !u!4 &660089658
 Transform:
   m_ObjectHideFlags: 0
