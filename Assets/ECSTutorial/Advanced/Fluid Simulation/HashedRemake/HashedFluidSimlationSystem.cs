@@ -165,6 +165,7 @@ namespace FluidSimulate
                     {
                         temp.velocity = Vector3.Reflect(temp.velocity, Vector3.up)
                             * (1 - parameter.ParticleViscosity);
+                        //----------------------------------------------- 반사된 방향을 다시 반사해서 바로 멈추나?
                     }
                     var AccSpeed = temp.acc.magnitude;
                     temp.acc.y = 0;
@@ -281,6 +282,7 @@ namespace FluidSimulate
                 }
 
                 data.acc = Vector3.zero;
+                data.isGround = particleData[index].isGround;
             }
         }
         [BurstCompile]
@@ -301,6 +303,8 @@ namespace FluidSimulate
         JobHandle PositionSetupHandle;
         bool isReady = false;
         float timer = 0;
+
+        int DebuggingIndex = 1;
 
         protected override void OnCreate()
         {
@@ -453,6 +457,8 @@ namespace FluidSimulate
             JobHandle ComputeCollisionHandle = ComputeCollisionJob.Schedule(particleCount, 64, FloorCollisionHandle);
             ComputeCollisionHandle.Complete();
 
+            Debugging(particleData, "ComputeCollisionJob");
+
             AddPosition AddPositionJob = new AddPosition
             {
                 particleData = particleData,
@@ -460,6 +466,8 @@ namespace FluidSimulate
             };
             JobHandle AddPositionHandle = AddPositionJob.ScheduleParallel(ParticleGroup, ComputeCollisionHandle);
             AddPositionHandle.Complete();// ------ 없으면 에러
+
+            Debugging(particleData, "AddPositionJob");
 
             ApplyPosition ApplyPositionJob = new() { };
             //JobHandle ApplyPositionHandle = ApplyPositionJob.ScheduleParallel(ParticleGroup, AddPositionHandle);
@@ -477,6 +485,18 @@ namespace FluidSimulate
                 hashMap.Dispose();
                 //particleIndices.Dispose();
                 cellOffsetTableNative.Dispose();
+            }
+        }
+
+        public void Debugging(NativeArray<FluidSimlationComponent> ParameterData , string comment)
+        {
+            //DebuggingIndex
+            //ParameterData[0].position
+            if (DebuggingIndex < ParameterData.Length)
+            {
+                //Debug.Log(DebuggingIndex + " | " + comment + " : Pos :" + ParameterData[DebuggingIndex].position
+                //    + " / velo :" +  ParameterData[DebuggingIndex].velocity + " / Is Ground : " + ParameterData[DebuggingIndex].isGround
+                //     + " / velo sqrLength : " + ParameterData[DebuggingIndex].velocity.sqrMagnitude);
             }
         }
     }

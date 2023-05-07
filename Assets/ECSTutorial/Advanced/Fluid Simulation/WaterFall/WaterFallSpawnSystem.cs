@@ -16,24 +16,16 @@ namespace FluidSimulate.WaterFall
         BeginInitializationEntityCommandBufferSystem IntiECB;
         EntityQuery ParticlesQuery;
 
-        bool IsSpawn = false;
         float Timer = 0f;
         NativeArray<Entity> entities;
-        WaterFallSpawnComponent Manager;
 
         enum SpawnWorkType { Inti , Reset, Spawning};
         SpawnWorkType SpawnWork = SpawnWorkType.Inti;
 
-        NativeParallelMultiHashMap<int, Entity> SpawnedEntity;
+        NativeParallelMultiHashMap<int, Entity> DisabledEntity;
 
         #region Job
-        partial struct Spawn : IJobEntity
-        {
-            public void Execute([EntityIndexInQuery] int index)
-            {
 
-            }
-        }
         partial struct SetEnableAll : IJobEntity
         {
             public EntityCommandBuffer.ParallelWriter ECB;
@@ -43,7 +35,31 @@ namespace FluidSimulate.WaterFall
             {
                 ECB.SetEnabled(index, entities[index], Vaule);
             }
-        }
+        }//스폰후 모두 비활성화 할때 사용
+
+        partial struct GetDisableEntity : IJobParallelFor
+        {
+            [Unity.Collections.LowLevel.Unsafe.NativeDisableUnsafePtrRestriction]
+            public EntityQuery entityQuery;
+            public NativeArray<Entity> entities;
+            public NativeParallelMultiHashMap<int, Entity>.ParallelWriter DisabledEntity;
+
+            public void Execute(int index)
+            {
+                if (entityQuery.Matches(entities[index]))
+                {
+
+                }else
+                {
+                    DisabledEntity.Add(index, entities[index]);
+                }
+            }
+        }//스폰풀을 만들때 사용
+
+        #endregion
+
+        #region Disabled Job
+
         partial struct TempTimer : IJobParallelFor
         {
             public EntityCommandBuffer.ParallelWriter ECB;
@@ -59,12 +75,11 @@ namespace FluidSimulate.WaterFall
 
             //public EntityManager manager;//---------------------- 안됨
             // EntityManager, SystemAPI 도 안되네
-            //------------------------------------ 그냥 TAG 붙여서 구별 ---> 태그를 붙이고 비활성화?
 
             public void Execute(int index)// , in FluidSimlationComponent manager)
             {
                 //if ((Timer / 10f) > (index / entities.Length))
-                
+
                 {
                     if (entities.Length > index)
                     {
@@ -101,10 +116,11 @@ namespace FluidSimulate.WaterFall
             public void Execute([EntityIndexInQuery] int index, in LocalTransform trans, in SpawnedTag tag)
             {
                 //Debug.Log(index + " : " + SpawnedEntity[index]);
-                
+
                 if (SpawnedEntity.TryGetFirstValue(index, out Entity vaule, out var it))//(SpawnedEntity[index])
                 {
                     var temp = new FluidSimlationComponent();
+                    temp.position = trans.Position;
                     temp.velocity = velocity;
                     ECB.SetComponent(index, vaule, temp);// 물리효과 키고 쓰면 사라짐 , 끄면 그대로 있고...
 
@@ -112,7 +128,8 @@ namespace FluidSimulate.WaterFall
                     tempPos.Scale = 0.25f;
                     Debug.Log("new Spawn");
                     //ECB.SetComponent(index, vaule, tempPos);
-                }else
+                }
+                else
                 {
                     if (trans.Scale < 1)
                     {
@@ -127,6 +144,7 @@ namespace FluidSimulate.WaterFall
                 //SpawnedEntity.TryGetValue(index, out Entity temp);
             }
         }
+
         #endregion
 
         protected override void OnCreate()
@@ -134,30 +152,23 @@ namespace FluidSimulate.WaterFall
             IntiECB = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>();
             RequireForUpdate<WaterFallSpawnComponent>();
 
-            SpawnedEntity = new(entities.Length, Allocator.TempJob);
+            DisabledEntity = new(entities.Length, Allocator.TempJob);
         }
+        protected override void OnStopRunning()
+        {
+            entities.Dispose();
+        }
+
         protected override void OnUpdate()
         {
             //------- 순차적으로 스폰
             var ecb = IntiECB.CreateCommandBuffer().AsParallelWriter();//병렬작업      
-            //NativeArray<Entity> SpawnedEntity = new (entities.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 
-            if (SpawnWork == SpawnWorkType.Spawning)
-            {
-                StartVelocity startVelocityJob = new StartVelocity
-                {
-                    ECB = ecb,
-                    entities = entities,
-                    velocity = Vector3.forward * 1,
-                    //SpawnedEntity = CheckSpawnedEntity
-                    SpawnedEntity = SpawnedEntity
-                };
-                var startVelocityHandle = startVelocityJob.ScheduleParallel(Dependency);//startVelocityJob.ScheduleParallel(ParticlesQuery, TimerHandle);
-                startVelocityHandle.Complete();
-
-                SpawnedEntity = new(entities.Length, Allocator.TempJob);//------ 스폰 대상이 이번 프레임에 추가된걸로 하다보니 다음에 목록에 사라짐
-                // --------------- SpawnWork.Spawning 에 붙여서 쓰면 되는지 확인
-            }
+            /*
+             * SpawnWorkType.Inti : 스폰
+             * SpawnWorkType.Reset : 모두 비활성화시키고 , entities 를 생성
+             * SpawnWorkType.Spawning : 비활성화된 엔티티 목록을 만들고 , 일정 갯수를 다시 활성화 시키고 , 가만히 있는걸 다시 회수
+             */
 
             switch (SpawnWork)
             {
@@ -177,9 +188,12 @@ namespace FluidSimulate.WaterFall
                                 {
                                     var instance = ecb.Instantiate(entityInQueryIndex, manager.particle);
 
+                                    /*
                                     var position = new float3((i % size) * 1.2f + random.NextFloat(-0.1f, 0.1f) * manager.RandomPower,
                                         0 + (i / size / size) * 1.2f,
-                                        ((i / size) % size) * 1.2f + random.NextFloat(-0.1f, 0.1f) * manager.RandomPower) + transform.Position;
+                                        ((i / size) % size) * 1.2f + random.NextFloat(-0.1f, 0.1f) * manager.RandomPower) + transform.Position;*/
+
+                                    var position = new float3(random.NextFloat(-1f, 1f), random.NextFloat(-1f, 1f), random.NextFloat(-1f, 1f)) * manager.RandomPower + transform.Position;
 
                                     var Ltrans = new LocalTransform
                                     {
@@ -207,13 +221,13 @@ namespace FluidSimulate.WaterFall
                         if (entities.Length == 0)
                         {
                             entities = ParticlesQuery.ToEntityArray(Allocator.Persistent);
-                            Manager = SystemAPI.GetSingleton<WaterFallSpawnComponent>();
+                            //Manager = SystemAPI.GetSingleton<WaterFallSpawnComponent>();
                         }
 
                         SetEnableAll setEnableJob = new SetEnableAll
                         {
                             ECB = ecb,
-                            entities = ParticlesQuery.ToEntityArray(Allocator.TempJob),
+                            entities = entities,
                             Vaule = false
                         };
                         JobHandle SetEnableHandle = setEnableJob.ScheduleParallel(ParticlesQuery, Dependency);
@@ -227,50 +241,59 @@ namespace FluidSimulate.WaterFall
 
                         Timer += SystemAPI.Time.DeltaTime;
 
-                        //NativeArray<bool> CheckSpawnedEntity = new NativeArray<bool>(entities.Length, Allocator.TempJob);
 
-                        TempTimer tempTimerJob = new TempTimer
+                        DisabledEntity = new(entities.Length, Allocator.TempJob);
+                        GetDisableEntity DisabledEntityJob = new GetDisableEntity
                         {
-                            ECB = ecb,
                             entities = entities,
-                            Timer = Timer,
-                            SpawnInterval = Manager.SpawnInterval,
                             entityQuery = ParticlesQuery,
-                            SpawnedEntity = SpawnedEntity.AsParallelWriter()
+                            DisabledEntity = DisabledEntity.AsParallelWriter()
                         };
-                        var TimerHandle = tempTimerJob.Schedule(entities.Length, 64, Dependency);
-                        TimerHandle.Complete();
-                        Dependency = TimerHandle;
+                        var GetDisabledHandle = DisabledEntityJob.Schedule(entities.Length, 64, Dependency);
+                        GetDisabledHandle.Complete();
 
-                        //-------------------------- 초기 속력 - StartVelocity
-                        /*
-                        StartVelocity startVelocityJob = new StartVelocity
+
+                        var manager = SystemAPI.GetSingleton<WaterFallSpawnComponent>();
+                        var VauleArray = DisabledEntity.GetValueArray(Allocator.Temp);
+
+                        var random = new Random(24825 + (uint)(Timer * 10000));//(uint)VauleArray.Length
+
+                        var SpawnerEntity = SystemAPI.GetSingletonEntity<WaterFallSpawnComponent>();
+                        var SpawnerManager = SystemAPI.GetSingleton<WaterFallSpawnComponent>();
+                        var SpawnerTrans = SystemAPI.GetComponent<LocalTransform>(SpawnerEntity);
+
+                        if (manager.SpawnInterval < Timer && manager.SpawnAmountToOnece <= VauleArray.Length )
                         {
-                            ECB = ecb,
-                            entities = entities,
-                            velocity = Vector3.forward * 100,
-                            //SpawnedEntity = CheckSpawnedEntity
-                            SpawnedEntity = SpawnedEntity
-                        };
-                        var startVelocityHandle = startVelocityJob.ScheduleParallel( TimerHandle);//startVelocityJob.ScheduleParallel(ParticlesQuery, TimerHandle);
-                        startVelocityHandle.Complete();
-                        Dependency = startVelocityHandle;
-                        */
-                        
-
-                        //------------ ParticlesQuery가 활성화된것만 하다보니 매 프레임마다 비활성화
-
-                        for (int i = 0; i < entities.Length; i++)
-                        {
-                            //if (CheckSpawnedEntity[i])
+                            for(int i = 0; i < manager.SpawnAmountToOnece; i++)
                             {
-                                //Debug.Log(" --- : " + i);
-                                break;
+                                IntiECB.CreateCommandBuffer().SetEnabled(VauleArray[i], true);
+                                var Ltrans = SystemAPI.GetComponent<LocalTransform>(VauleArray[i]);
+                                var Ldata = new FluidSimlationComponent();
+                                Ldata.position = //Ltrans.Position;
+                                    SpawnerTrans.Position 
+                                    + math.normalize(new float3(random.NextFloat(-1, 1), random.NextFloat(-1, 1), random.NextFloat(-1, 1))) * SpawnerManager.SpawnRadius;
+                                Ldata.velocity = SpawnerManager.IntiVelocity;
+                                IntiECB.CreateCommandBuffer().SetComponent(VauleArray[i], Ldata);
                             }
-                        }
+                            
 
-                        //Debug.Log(GetEntityQuery(typeof(SpawnedTag)).CalculateEntityCount() + " / " + entities.Length + "\n" 
-                        //    + SpawnedEntity.Count());
+                            Timer = 0;
+                        }// Get Pool
+                        VauleArray.Dispose();
+
+                        {
+                            var ReturnPoolHandle = Entities
+                                .WithName("WaterFall_ReturnPool")
+                                .WithBurst(FloatMode.Default, FloatPrecision.Standard, true)
+                                .ForEach((Entity e, int entityInQueryIndex, in FluidSimlationComponent fluid) =>
+                                {
+                                    if (fluid.isGround && fluid.velocity.sqrMagnitude < (1))
+                                        ecb.SetEnabled(entityInQueryIndex, e, false);
+                                }).ScheduleParallel(GetDisabledHandle);
+                            ReturnPoolHandle.Complete();
+                        }// Retrun Pool
+
+                        DisabledEntity.Dispose();//할당 해제 하니까 프레임  늘어났는데?
                         break;
                     }
 

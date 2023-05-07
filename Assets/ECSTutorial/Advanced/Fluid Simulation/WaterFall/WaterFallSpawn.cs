@@ -15,6 +15,10 @@ namespace FluidSimulate.WaterFall
         public float SpawnInterval = 0.25f;
         public int SpawnAmountToOnece = 1;
 
+        [Space(10)]
+        public Vector3 IntiVelocity = Vector3.forward;
+        public float IntiVelocityPower = 1;
+
         void Start()
         {
 
@@ -29,6 +33,8 @@ namespace FluidSimulate.WaterFall
         public float SpawnRadius;
         public float SpawnInterval;
         public int SpawnAmountToOnece;
+
+        public Vector3 IntiVelocity;
     }
     public struct SpawnedTag : IComponentData { }
 
@@ -44,7 +50,9 @@ namespace FluidSimulate.WaterFall
 
                 SpawnRadius = authoring.SpawnRadius,
                 SpawnInterval = authoring.SpawnInterval,
-                SpawnAmountToOnece = authoring.SpawnAmountToOnece
+                SpawnAmountToOnece = authoring.SpawnAmountToOnece,
+
+                IntiVelocity = Vector3.Normalize(authoring.IntiVelocity) * authoring.IntiVelocityPower
             });
         }
     }

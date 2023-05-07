@@ -155,11 +155,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particleObj: {fileID: 4119383697818013576, guid: b496664dad088904cb87f87ded1320e2,
     type: 3}
-  Amount: 1000
+  Amount: 10000
   RandomPower: 1
-  SpawnRadius: 1
+  SpawnRadius: 2
   SpawnInterval: 0.1
-  SpawnAmountToOnece: 1
+  SpawnAmountToOnece: 5
+  IntiVelocity: {x: 1, y: 1, z: 0}
+  IntiVelocityPower: 10
 --- !u!4 &1694977461
 Transform:
   m_ObjectHideFlags: 0
@@ -168,7 +170,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1694977459}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 10, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -190,7 +192,7 @@ MonoBehaviour:
   particleRadius: 1
   smoothRadius: 0
   gravity: {x: 0, y: -9.81, z: 0}
-  particleViscosity: 0.25
+  particleViscosity: 0.1
   particleDrag: 0.2
   MoveFPS: 120
   collisionPushMultiply:
