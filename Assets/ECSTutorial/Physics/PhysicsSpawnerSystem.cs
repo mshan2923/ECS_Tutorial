@@ -40,7 +40,7 @@ public partial class PhysicsSpawnerSystem : SystemBase
             Entities
             .WithName("PhysicsSpawnerSystem")
             //.WithBurst(FloatMode.Default, FloatPrecision.Standard, true)
-            .ForEach((Entity entity, int entityInQueryIndex, in CPhysicsObjSpawner Cspanwer) =>
+            .ForEach((Entity entity, int entityInQueryIndex, in CPhysicsObjSpawner Cspanwer, in LocalTransform trans) =>
             {
                 float3 sphereMin = new float3(Cspanwer.spawnSize.x,0, Cspanwer.spawnSize.z) * -Cspanwer.betweenOffset;
                 float3 sphereMax = new float3(Cspanwer.spawnSize.x, Cspanwer.spawnSize.y, Cspanwer.spawnSize.z) * Cspanwer.betweenOffset;
@@ -60,7 +60,9 @@ public partial class PhysicsSpawnerSystem : SystemBase
                                 ECB.SetComponent
                                     (instance, new LocalTransform
                                     {
-                                        Position = random.NextFloat3(sphereMin, sphereMax) + Cspanwer.offset + new float3(random.NextFloat(-0.1f, 0.1f), 0.5f, random.NextFloat(-0.1f, 0.1f)),
+                                        Position = random.NextFloat3(sphereMin, sphereMax) + Cspanwer.offset 
+                                            + new float3(random.NextFloat(-0.1f, 0.1f), 0.5f, random.NextFloat(-0.1f, 0.1f))
+                                            + trans.Position,
                                         Rotation = quaternion.identity,
                                         Scale = 1
                                     });

@@ -251,11 +251,13 @@ namespace Tutorial.ClickToSelect
             });                    
             EntityManager.AddComponentData<PhysicsCustomTags>(SelecterEntity, new PhysicsCustomTags{Value = 255});
             EntityManager.AddComponentData<PhysicsMass>(SelecterEntity, PhysicsMass.CreateKinematic(collider.MassProperties));
-            EntityManager.AddComponentData<Unity.Physics.Authoring.PhysicsBodyAuthoringData>(SelecterEntity,
+            /*
+             * EntityManager.AddComponentData<Unity.Physics.Authoring.PhysicsBodyAuthoringData>(SelecterEntity,
              new Unity.Physics.Authoring.PhysicsBodyAuthoringData {IsDynamic = true, Mass = 1, OverrideDefaultMassDistribution = true
                 , CustomMassDistribution = collider.MassProperties.MassDistribution});
+            *///PhysicsBodyAuthoringData이 없음
 
-             EntityManager.AddComponent<PhysicsVelocity>(SelecterEntity);
+            EntityManager.AddComponent<PhysicsVelocity>(SelecterEntity);
             
             //Unity.Physics.Aspects.RigidBodyAspect는 잘 추가 되었는데...
             //Debug.Log(" - " + EntityManager.GetAspectRO<Unity.Physics.Aspects.RigidBodyAspect>(SelecterEntity).Entity.Index);
