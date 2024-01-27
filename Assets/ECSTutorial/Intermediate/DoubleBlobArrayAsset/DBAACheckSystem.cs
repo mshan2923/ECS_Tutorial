@@ -42,6 +42,15 @@ public partial class DBAACheckSystem : SystemBase
 
             var checkHandle = new CheckJob().Schedule(Dependency);
             checkHandle.Complete();
+
+            var aspect = SystemAPI.GetAspect<DBAATestAspect>(target);
+            //Debug.Log($"--> {SystemAPI.GetAspect<DBAATestAspect>(target).DBAA.ValueRO.assetReference.Value.firstBlobArray.Length}");
+
+            if (aspect.firsts.Length > 0)
+            {
+                Debug.Log($"first (Ref) : {aspect.firsts[0].secondBlobArray[0].randomValue} / first  : {aspect.firsts_NotRef[0].secondBlobArray[0].randomValue}");
+
+            }
         }
     }
 
