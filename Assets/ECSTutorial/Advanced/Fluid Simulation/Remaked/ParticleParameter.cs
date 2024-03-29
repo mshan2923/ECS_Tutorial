@@ -6,6 +6,8 @@ using Unity.Entities;
 namespace FluidSimulate
 {
     public enum SimulationType { ECS , HashedECS};
+    public enum FloorType { None, Collision, Disable, Kill};
+
     public class ParticleParameter : MonoBehaviour
     {
         public float particleRadius = 1f;
@@ -22,6 +24,11 @@ namespace FluidSimulate
         public float collisionPush = 0.1f;
         [Space(10)]
         public SimulationType simulationType;
+
+        [Space(10)]
+        public FloorType floorType = FloorType.Collision;
+        public float floorHeight = 0;
+
 
         public void Start()
         {
@@ -45,6 +52,9 @@ namespace FluidSimulate
         public Keyframe CollisionPushEnd;
 
         public SimulationType simulationType;
+
+        public FloorType floorType;
+        public float floorHeight;
 
         public static float Evaluate(float t, Keyframe keyframe0, Keyframe keyframe1)
         {
@@ -86,7 +96,9 @@ namespace FluidSimulate
     {
         public override void Bake(ParticleParameter authoring)
         {
-            AddComponent(new ParticleParameterComponent
+            AddComponent(
+                GetEntity(authoring, TransformUsageFlags.None),
+                new ParticleParameterComponent
             {
                 ParticleRadius = authoring.particleRadius,
                 SmoothRadius = authoring.smoothRadius,
@@ -101,8 +113,11 @@ namespace FluidSimulate
                 CollisionPushEnd =
                     authoring.collisionPushMultiply.keys.Length >= 2 ? authoring.collisionPushMultiply.keys[1] : default,
 
-                simulationType = authoring.simulationType
-            });;
+                simulationType = authoring.simulationType,
+
+                floorType = authoring.floorType,
+                floorHeight = authoring.floorHeight
+            });
         }
     }
 }

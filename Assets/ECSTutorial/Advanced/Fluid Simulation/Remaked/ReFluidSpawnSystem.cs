@@ -8,6 +8,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Random = Unity.Mathematics.Random;
+using Unity.VisualScripting;
 
 namespace FluidSimulate
 {
@@ -86,7 +87,10 @@ namespace FluidSimulate
                 //Enabled = false;
                 return;
             }
-            
+
+            ParticleParameterComponent Parameter = SystemAPI.GetSingleton<ParticleParameterComponent>();
+            float particleSize = Parameter.ParticleRadius / 0.5f;
+
             var ecb = IntiECB.CreateCommandBuffer().AsParallelWriter();//병렬작업            
             Entities
                 //.WithAll<RemakedFluidSpawnComponent>()
@@ -107,11 +111,11 @@ namespace FluidSimulate
                             0 + (i / size / size) * 1.2f,
                             ((i / size) % size) * 1.2f + random.NextFloat(-0.1f, 0.1f) * manager.RandomPower) + transform.Position;
 
-                        var Ltrans = new LocalTransform 
+                        var Ltrans = new LocalTransform
                         {
                             Position = position,
-                            Rotation = quaternion.identity, 
-                            Scale = 1 
+                            Rotation = quaternion.identity,
+                            Scale = particleSize
                         };
 
                         ecb.SetComponent(entityInQueryIndex, instance, Ltrans);

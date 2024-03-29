@@ -29,7 +29,8 @@ namespace FluidSimulate
     {
         public override void Bake(FluidSimlationParameter authoring)
         {
-            AddComponent(new FluidSimlationComponent
+            AddComponent(GetEntity(authoring, TransformUsageFlags.Dynamic),
+                new FluidSimlationComponent
             {
                 position = authoring.Position,
                 velocity = authoring.Velocity,
