@@ -87,7 +87,11 @@ namespace FluidSimulate
                 //Enabled = false;
                 return;
             }
-
+            if (!SystemAPI.HasSingleton<ParticleParameterComponent>())
+            {
+                Enabled = false;
+                return;
+            }
             ParticleParameterComponent Parameter = SystemAPI.GetSingleton<ParticleParameterComponent>();
             float particleSize = Parameter.ParticleRadius / 0.5f;
 

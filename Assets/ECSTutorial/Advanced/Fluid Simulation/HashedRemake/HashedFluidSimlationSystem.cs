@@ -241,29 +241,37 @@ namespace FluidSimulate
                                 // OBB 축기준 Project 해서 거리 비교
                                 // 모든 축이 충돌이여야 충돌
 
+                                var maxPoint = collisionTransform[i].Right() * collisions[i].WorldSize.x
+                                    + collisionTransform[i].Up() * collisions[i].WorldSize.y
+                                    + collisionTransform[i].Forward() * collisions[i].WorldSize.z;
+                                maxPoint *= 0.5f;
+
                                 var ostProjectX = math.project(collisionTransform[i].Position, collisionTransform[i].Right());
-                                var ostAreaProjectX = math.project(collisionTransform[i].Position + collisions[i].WorldSize * 0.5f, collisionTransform[i].Right());
-                                var particleProjectX = math.project(particle.position - Vector3.one * parameter.ParticleRadius, collisionTransform[i].Right());
-                                var projectXDissq = math.distancesq(particleProjectX, ostProjectX);
-                                if (projectXDissq >= math.distancesq(ostAreaProjectX, ostProjectX))
+                                var ostAreaProjectX = math.project(collisionTransform[i].Position + maxPoint, collisionTransform[i].Right());
+                                var particleProjectX = math.project(particle.position, collisionTransform[i].Right());
+                                var projectXDis = math.distance(particleProjectX, ostProjectX);
+                                if (projectXDis - parameter.ParticleRadius >= math.distance(ostAreaProjectX, ostProjectX))
                                 {
                                     continue;
                                 }
 
                                 var ostProjectZ = math.project(collisionTransform[i].Position, collisionTransform[i].Forward());
-                                var ostAreaProjectZ = math.project(collisionTransform[i].Position + collisions[i].WorldSize * 0.5f, collisionTransform[i].Forward());
-                                var particleProjectZ = math.project(particle.position - Vector3.one * parameter.ParticleRadius, collisionTransform[i].Forward());
-                                var projectZDissq = math.distancesq(particleProjectZ, ostProjectZ);
-                                if (projectZDissq >= math.distancesq(ostAreaProjectZ, ostProjectZ))
+                                var ostAreaProjectZ = math.project(collisionTransform[i].Position + maxPoint, collisionTransform[i].Forward());
+                                var particleProjectZ = math.project(particle.position, collisionTransform[i].Forward());
+                                var projectZDis = math.distance(particleProjectZ, ostProjectZ);
+                                if (projectZDis - parameter.ParticleRadius >= math.distance(ostAreaProjectZ, ostProjectZ))
                                 {
                                     continue;
                                 }
 
                                 var ostProjectY = math.project(collisionTransform[i].Position, collisionTransform[i].Up());
-                                var ostAreaProjectY = math.project(collisionTransform[i].Position + collisions[i].WorldSize * 0.5f, collisionTransform[i].Up());
-                                var particleProjectY = math.project(particle.position - Vector3.one * parameter.ParticleRadius, collisionTransform[i].Up());
-                                var projectYDissq = math.distancesq(particleProjectY, ostProjectY);
-                                if (projectYDissq < math.distancesq(ostAreaProjectY, ostProjectY))
+                                var ostAreaProjectY = math.project(collisionTransform[i].Position + maxPoint, collisionTransform[i].Up());
+                                var particleProjectY = math.project(particle.position, collisionTransform[i].Up());
+                                var projectYDis = math.distance(particleProjectY, ostProjectY);
+
+                                //=================== 충돌되는 box 면이....
+
+                                if (projectYDis - parameter.ParticleRadius < math.distance(ostAreaProjectY, ostProjectY))
                                 {
                                     float3 dir = float3.zero;
                                     {
@@ -275,33 +283,33 @@ namespace FluidSimulate
                                         {
                                             if (math.dot(collisionTransform[i].Right(), math.normalize(particleProjectX - ostAreaProjectX)) > 0)
                                             {
-                                                dir = -collisionTransform[i].Right();
+                                                dir = collisionTransform[i].Right();
                                             }
                                             else
                                             {
-                                                dir = collisionTransform[i].Right();
+                                                dir = -collisionTransform[i].Right();
                                             }
                                         }
                                         else if (disToMaxY < disToMaxX && disToMaxY < disToMaxZ)
                                         {
                                             if (math.dot(collisionTransform[i].Up(), math.normalize(particleProjectY - ostAreaProjectY)) > 0)
                                             {
-                                                dir = -collisionTransform[i].Up();
+                                                dir = collisionTransform[i].Up();
                                             }
                                             else
                                             {
-                                                dir = collisionTransform[i].Up();
+                                                dir = -collisionTransform[i].Up();
                                             }
                                         }
                                         else
                                         {
                                             if (math.dot(collisionTransform[i].Forward(), math.normalize(particleProjectZ - ostAreaProjectZ)) > 0)
                                             {
-                                                dir = -collisionTransform[i].Forward();
+                                                dir = collisionTransform[i].Forward();
                                             }
                                             else
                                             {
-                                                dir = collisionTransform[i].Forward();
+                                                dir = -collisionTransform[i].Forward();
                                             }
                                         }
                                     }//Calculate Box Normal
