@@ -367,7 +367,7 @@ namespace FluidSimulate
                         default:
                             {
                                 particle.velocity = math.reflect(particle.velocity, collisionTransform[i].Up())//Vector3.Reflect(temp.velocity, collisionTransform[i].Up)
-                                        * (1 - parameter.ParticleViscosity);
+                                        * (1 - parameter.ParticleDrag);
                                 //collisionTransform[i].Up 가 반사축
 
                                 particle.position += Vector3.Normalize(offset);//---- 적용이 안되나??
@@ -405,12 +405,12 @@ namespace FluidSimulate
                     {
                         if (particleData[index].isGround)
                         {
-                            temp.velocity *= 1 - (parameter.ParticleDrag * parameter.DT);
+                            temp.velocity *= 1 - (parameter.ParticleViscosity * parameter.DT);
                         }
                     }
                     else
                     {
-                        float CollisionAcc = Mathf.Max(1 - parameter.ParticleViscosity, 0);
+                        float CollisionAcc = Mathf.Max(1 - parameter.ParticleDrag, 0);
                         if (particleData[index].isGround)
                         {
                             if (moveRes[index] >= 0)
@@ -436,7 +436,7 @@ namespace FluidSimulate
 
                             if (Mathf.Abs(moveRes[index]) > 0.1f)
                             {
-                                var reflectVel = temp.velocity * (1 - parameter.ParticleViscosity);
+                                var reflectVel = temp.velocity * (1 - parameter.ParticleDrag);
                                 //(parameter.DT * CollisionAcc * temp.velocity);
 
                                 if (moveRes[index] >= 0)

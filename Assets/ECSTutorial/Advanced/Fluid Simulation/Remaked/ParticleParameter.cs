@@ -15,7 +15,9 @@ namespace FluidSimulate
         //public float restDensity;
         public Vector3 gravity = new Vector3(0, -9.81f, 0);
         //public float particleMass;
+        [Tooltip("반발력인한 감속량")]
         public float particleViscosity = 0.25f;
+        [Tooltip("척력인한 감속량")]
         public float particleDrag = 0.2f;
 
         public int MoveFPS = 120;
@@ -43,7 +45,9 @@ namespace FluidSimulate
         //public float restDensity;
         public Vector3 Gravity;
         //public float particleMass;
+        [Tooltip("반발력")]
         public float ParticleViscosity;
+        [Tooltip("척력")]
         public float ParticleDrag;
         public float DT;
 
