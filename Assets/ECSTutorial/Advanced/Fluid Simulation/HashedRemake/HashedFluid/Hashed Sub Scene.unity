@@ -223,13 +223,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1072403017}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0.08715578, w: 0.9961947}
-  m_LocalPosition: {x: 8.83, y: 5, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0.2588191, w: 0.9659258}
+  m_LocalPosition: {x: 8.9, y: 5.01, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 10}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 30}
 --- !u!114 &1072403022
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -243,6 +243,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   colliderType: 2
+  colliderEvent: 1
 --- !u!1 &1645129666
 GameObject:
   m_ObjectHideFlags: 0
@@ -275,7 +276,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particleObj: {fileID: 4119383697818013576, guid: b496664dad088904cb87f87ded1320e2,
     type: 3}
-  Amount: 1000
+  Amount: 100
   RandomPower: 1
 --- !u!4 &1645129668
 Transform:
@@ -286,7 +287,7 @@ Transform:
   m_GameObject: {fileID: 1645129666}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 5, z: 0}
+  m_LocalPosition: {x: 10.1, y: 11.9, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -307,8 +308,9 @@ MonoBehaviour:
   particleRadius: 0.5
   smoothRadius: 0
   gravity: {x: 0, y: -9.81, z: 0}
-  particleViscosity: 0.1
+  particleViscosity: 0.75
   particleDrag: 0.2
+  particlePush: 1
   MoveFPS: 120
   collisionPushMultiply:
     serializedVersion: 2
@@ -337,7 +339,7 @@ MonoBehaviour:
   collisionPush: 0.001
   simulationType: 1
   floorType: 1
-  floorHeight: 0
+  floorHeight: -10
 --- !u!1 &1648577464
 GameObject:
   m_ObjectHideFlags: 0
@@ -371,6 +373,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   colliderType: 0
+  colliderEvent: 0
 --- !u!135 &1648577466
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -451,7 +454,7 @@ Transform:
   m_GameObject: {fileID: 1648577464}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.58, y: 1, z: 0}
+  m_LocalPosition: {x: -4.93, y: 3.42, z: 1.95}
   m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -558,7 +561,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0.08715578, w: 0.9961947}
   m_LocalPosition: {x: 0.74, y: 4, z: 0}
-  m_LocalScale: {x: 50, y: 5, z: 50}
+  m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -576,6 +579,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   colliderType: 1
+  colliderEvent: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

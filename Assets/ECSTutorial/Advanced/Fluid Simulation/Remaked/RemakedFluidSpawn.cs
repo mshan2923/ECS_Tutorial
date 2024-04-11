@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
+using Unity.VisualScripting;
 
 namespace FluidSimulate
 {
@@ -26,9 +27,10 @@ namespace FluidSimulate
     {
         public override void Bake(RemakedFluidSpawn authoring)
         {
-            AddComponent(new RemakedFluidSpawnComponent
+            AddComponent(GetEntity(authoring, TransformUsageFlags.Dynamic),
+                new RemakedFluidSpawnComponent
             {
-                particle = GetEntity(authoring.particleObj),//authoring.Gameobject....를 써서 계속 안된거였어...
+                particle = GetEntity(authoring.particleObj, TransformUsageFlags.Renderable),//authoring.Gameobject....를 써서 계속 안된거였어...
                 Amount = authoring.Amount,
                 RandomPower = authoring.RandomPower
             });

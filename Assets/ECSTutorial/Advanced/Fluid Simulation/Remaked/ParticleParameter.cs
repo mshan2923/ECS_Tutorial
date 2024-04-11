@@ -19,6 +19,8 @@ namespace FluidSimulate
         public float particleViscosity = 0.25f;
         [Tooltip("척력인한 감속량")]
         public float particleDrag = 0.2f;
+        [Tooltip("충돌시 일어냄 강도")]
+        public float particlePush = 1f;
 
         public int MoveFPS = 120;
 
@@ -45,10 +47,12 @@ namespace FluidSimulate
         //public float restDensity;
         public Vector3 Gravity;
         //public float particleMass;
-        [Tooltip("반발력")]
+        [Tooltip("반발력인한 감속량")]
         public float ParticleViscosity;
-        [Tooltip("척력")]
+        [Tooltip("척력인한 감속량")]
         public float ParticleDrag;
+        [Tooltip("충돌시 일어냄 강도")]
+        public float ParticlePush;
         public float DT;
 
         public float CollisionPush;
@@ -109,6 +113,7 @@ namespace FluidSimulate
                 Gravity = authoring.gravity,
                 ParticleViscosity = authoring.particleViscosity,
                 ParticleDrag = authoring.particleDrag,
+                ParticlePush = authoring.particlePush,
                 DT = 1f / authoring.MoveFPS,
 
                 CollisionPush = authoring.collisionPush,

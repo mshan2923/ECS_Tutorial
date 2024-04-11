@@ -15,7 +15,7 @@ namespace FluidSimulate
 
         public bool IsGround;
     }
-    public struct FluidSimlationComponent : IComponentData
+    public struct FluidSimlationComponent : IComponentData, IEnableableComponent
     {
         public Vector3 position;
 

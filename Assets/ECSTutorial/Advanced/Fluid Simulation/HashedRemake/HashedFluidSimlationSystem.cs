@@ -155,11 +155,14 @@ namespace FluidSimulate
         struct ComputeFloorCollision : IJobParallelFor
         {
             public NativeArray<FluidSimlationComponent> particleData;
+            public NativeArray<Entity> particleEntity;
 
             public ParticleParameterComponent parameter;
 
             public NativeArray<LocalTransform> collisionTransform;
             public NativeArray<CollisionComponent> collisions;
+
+            public EntityCommandBuffer.ParallelWriter ecb;
 
             public void Execute(int index)
             {
@@ -167,8 +170,6 @@ namespace FluidSimulate
 
                 switch (parameter.floorType)
                 {
-                    case FloorType.None:
-                        return;
                     case FloorType.Collision:
                         {
                             //var particle = particleData[index];//
@@ -198,12 +199,24 @@ namespace FluidSimulate
                         }
                     case FloorType.Disable:
                         {
+                            if (particleData[index].position.y <= parameter.floorHeight + parameter.ParticleRadius)
+                            {
+                                //ecb.SetEnabled(index, particleEntity[index], false);
+                                ecb.SetComponentEnabled<FluidSimlationComponent>(index, particleEntity[index], false);
+                            }
                             break;
                         }
                     case FloorType.Kill:
                         {
+                            if (particleData[index].position.y <= parameter.floorHeight + parameter.ParticleRadius)
+                            {
+                                ecb.DestroyEntity(index, particleEntity[index]);
+                            }
                             break;
                         }
+                    case FloorType.None:
+                    default:
+                        return;
                 }
                 
             }
@@ -213,11 +226,14 @@ namespace FluidSimulate
         struct ComputeObstacleCollision : IJobParallelFor
         {
             public NativeArray<FluidSimlationComponent> particleData;
+            public NativeArray<Entity> particleEntity;
 
             [ReadOnly]  public NativeArray<LocalTransform> collisionTransform;
             [ReadOnly]  public NativeArray<CollisionComponent> collisions;
 
             public ParticleParameterComponent parameter;
+
+            public EntityCommandBuffer.ParallelWriter ecb;
 
             public void Execute(int index)
             {
@@ -234,157 +250,33 @@ namespace FluidSimulate
                         continue;
                     }
 
-                    switch (collisions[i].colliderType)
+                    bool IsCollision = collisions[i].IsCollisionSphere(collisionTransform[i], parameter.ParticleRadius,
+                        particle.position, out var dir, out var dis);
+
+                    if (IsCollision)
                     {
-                        case ColliderType.Box:
-                            {
-                                // OBB 축기준 Project 해서 거리 비교
-                                // 모든 축이 충돌이여야 충돌
+                        particle.position += dis * parameter.ParticlePush * Vector3.Normalize(dir);
+                        particle.velocity += dis * parameter.ParticlePush * Vector3.Normalize(dir);
 
-                                var maxPoint = collisionTransform[i].Right() * collisions[i].WorldSize.x
-                                    + collisionTransform[i].Up() * collisions[i].WorldSize.y
-                                    + collisionTransform[i].Forward() * collisions[i].WorldSize.z;
-                                maxPoint *= 0.5f;
-
-                                var ostProjectX = math.project(collisionTransform[i].Position, collisionTransform[i].Right());
-                                var ostAreaProjectX = math.project(collisionTransform[i].Position + maxPoint, collisionTransform[i].Right());
-                                var particleProjectX = math.project(particle.position, collisionTransform[i].Right());
-                                var projectXDis = math.distance(particleProjectX, ostProjectX);
-                                if (projectXDis - parameter.ParticleRadius >= math.distance(ostAreaProjectX, ostProjectX))
-                                {
-                                    continue;
-                                }
-
-                                var ostProjectZ = math.project(collisionTransform[i].Position, collisionTransform[i].Forward());
-                                var ostAreaProjectZ = math.project(collisionTransform[i].Position + maxPoint, collisionTransform[i].Forward());
-                                var particleProjectZ = math.project(particle.position, collisionTransform[i].Forward());
-                                var projectZDis = math.distance(particleProjectZ, ostProjectZ);
-                                if (projectZDis - parameter.ParticleRadius >= math.distance(ostAreaProjectZ, ostProjectZ))
-                                {
-                                    continue;
-                                }
-
-                                var ostProjectY = math.project(collisionTransform[i].Position, collisionTransform[i].Up());
-                                var ostAreaProjectY = math.project(collisionTransform[i].Position + maxPoint, collisionTransform[i].Up());
-                                var particleProjectY = math.project(particle.position, collisionTransform[i].Up());
-                                var projectYDis = math.distance(particleProjectY, ostProjectY);
-
-                                //=================== 충돌되는 box 면이....
-
-                                if (projectYDis - parameter.ParticleRadius < math.distance(ostAreaProjectY, ostProjectY))
-                                {
-                                    float3 dir = float3.zero;
-                                    {
-                                        var disToMaxX = math.distancesq(particleProjectX, ostAreaProjectX);
-                                        var disToMaxY = math.distancesq(particleProjectY, ostAreaProjectY);
-                                        var disToMaxZ = math.distancesq(particleProjectZ, ostAreaProjectZ);
-
-                                        if (disToMaxX < disToMaxY && disToMaxX < disToMaxZ)
-                                        {
-                                            if (math.dot(collisionTransform[i].Right(), math.normalize(particleProjectX - ostAreaProjectX)) > 0)
-                                            {
-                                                dir = collisionTransform[i].Right();
-                                            }
-                                            else
-                                            {
-                                                dir = -collisionTransform[i].Right();
-                                            }
-                                        }
-                                        else if (disToMaxY < disToMaxX && disToMaxY < disToMaxZ)
-                                        {
-                                            if (math.dot(collisionTransform[i].Up(), math.normalize(particleProjectY - ostAreaProjectY)) > 0)
-                                            {
-                                                dir = collisionTransform[i].Up();
-                                            }
-                                            else
-                                            {
-                                                dir = -collisionTransform[i].Up();
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (math.dot(collisionTransform[i].Forward(), math.normalize(particleProjectZ - ostAreaProjectZ)) > 0)
-                                            {
-                                                dir = collisionTransform[i].Forward();
-                                            }
-                                            else
-                                            {
-                                                dir = -collisionTransform[i].Forward();
-                                            }
-                                        }
-                                    }//Calculate Box Normal
-
-                                    particle.position += Vector3.Normalize(dir);//---- 적용이 안되나??
-                                    particle.velocity += Vector3.Normalize(dir);
-                                }
-
+                        switch (collisions[i].colliderEvent)
+                        {
+                            case ColliderEvent.Collision:
                                 break;
-                            }
-                        case ColliderType.Plane:
-                            {
-                                var ostProjectX = math.project(collisionTransform[i].Position, collisionTransform[i].Right());
-                                var ostAreaProjectX = math.project(collisionTransform[i].Position + collisions[i].WorldSize * 0.5f, collisionTransform[i].Right());
-                                var particleProjectX = math.project(particle.position, collisionTransform[i].Right());
-                                if (math.distancesq(particleProjectX, ostProjectX) >= math.distancesq(ostAreaProjectX, ostProjectX))
-                                {
-                                    continue;
-                                }
-
-                                var ostProjectZ = math.project(collisionTransform[i].Position, collisionTransform[i].Forward());
-                                var ostAreaProjectZ = math.project(collisionTransform[i].Position + collisions[i].WorldSize * 0.5f, collisionTransform[i].Forward());
-                                var particleProjectZ = math.project(particle.position, collisionTransform[i].Forward());
-                                if (math.distancesq(particleProjectZ, ostProjectZ) >= math.distancesq(ostAreaProjectZ, ostProjectZ))
-                                {
-                                    continue;
-                                }
-
-
-                                var ostProjectY = math.project(collisionTransform[i].Position, collisionTransform[i].Up());
-                                var particleProjectY = math.project(particle.position, collisionTransform[i].Up());
-
-                                if (math.distancesq(ostProjectY, particleProjectY) <= parameter.ParticleRadius)
-                                {
-                                    float3 dir = float3.zero;
-
-                                    if (math.dot(collisionTransform[i].Up(), math.normalize(particleProjectY - ostProjectY)) > 0)
-                                    {
-                                        dir = collisionTransform[i].Up();
-                                    }
-                                    else
-                                    {
-                                        dir = -collisionTransform[i].Up();
-                                    }
-
-                                    particle.position += Vector3.Normalize(dir);//---- 적용이 안되나??
-                                    particle.velocity += Vector3.Normalize(dir);
-                                    //=============== 
-                                }
-
-
+                            case ColliderEvent.DisableTrigger:
+                                ecb.SetEnabled(index, particleEntity[index], false);
+                                ecb.SetComponentEnabled<FluidSimlationComponent>(index, particleEntity[index], false);
                                 break;
-                            }
-                        case ColliderType.Sphere:
-                        default:
-                            {
-                                particle.velocity = math.reflect(particle.velocity, collisionTransform[i].Up())//Vector3.Reflect(temp.velocity, collisionTransform[i].Up)
-                                        * (1 - parameter.ParticleDrag);
-                                //collisionTransform[i].Up 가 반사축
-
-                                particle.position += Vector3.Normalize(offset);//---- 적용이 안되나??
-                                particle.velocity += Vector3.Normalize(offset);
-
-                                //particleData[index] = particle;
+                            case ColliderEvent.KillTrigger:
+                                ecb.DestroyEntity(index, particleEntity[index]);
                                 break;
-                            }
+                        }
                     }
                 }
 
                 particleData[index] = particle;
-                
+
             }
-        }//================= 평면, 오브젝트 충돌 처리 , 위치값 변경 적용이 안되는듯?
-        //=================++++++ Box 회전시 충돌 적용 안되는데??
-        //=====loop , Job 병렬처리시 여러 요소 변경이 안되는건가?
+        }
 
         [BurstCompile]
         struct ComputeCollision : IJobParallelFor
@@ -441,11 +333,14 @@ namespace FluidSimulate
 
                                 if (moveRes[index] >= 0)
                                 {
-                                    temp.velocity = Vector3.Reflect((reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                    var result = Vector3.Reflect((reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                    temp.velocity = result;
+                                    temp.position -= pressureDir[index] * parameter.DT * parameter.ParticlePush;
                                 }
                                 else
                                 {
                                     temp.velocity = Vector3.Reflect((-reflectVel + temp.acc * parameter.DT), pressureDir[index].normalized);
+                                    temp.position += pressureDir[index] * parameter.DT * parameter.ParticlePush;
                                 }
                             }
                         }
@@ -481,7 +376,7 @@ namespace FluidSimulate
                 }
                 else
                 {
-                    data.position += particleData[index].velocity * parameter.DT;
+                    data.position = particleData[index].position + particleData[index].velocity * parameter.DT;
                 }
 
                 data.acc = Vector3.zero;
@@ -570,6 +465,7 @@ namespace FluidSimulate
 
             NativeArray<FluidSimlationComponent> particleData =
                 ParticleGroup.ToComponentDataArray<FluidSimlationComponent>(Allocator.TempJob);
+            var particleEntity = ParticleGroup.ToEntityArray(Allocator.TempJob);
 
             int particleCount = particleData.Length;
 
@@ -582,6 +478,12 @@ namespace FluidSimulate
 
             var obstacleTransform = ObstacleGroup.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
             var obstacleTypeData = ObstacleGroup.ToComponentDataArray<CollisionComponent>(Allocator.TempJob);
+
+            
+            var floorECB = new EntityCommandBuffer(Allocator.TempJob);
+            var collisionECB = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(EntityManager.WorldUnmanaged);//new EntityCommandBuffer(Allocator.TempJob);
+
             #endregion
 
             #region 설정
@@ -653,24 +555,23 @@ namespace FluidSimulate
                 parameter = Parameter,
 
                 collisions = obstacleTypeData,
-                collisionTransform = obstacleTransform
+                collisionTransform = obstacleTransform,
+
+                particleEntity = particleEntity,
+                ecb = floorECB.AsParallelWriter()
             };
             JobHandle FloorCollisionHandle = FloorCollisionJob.Schedule(particleCount, 64, computePressureJobHandle);
 
-            if (Parameter.floorType == FloorType.Disable || Parameter.floorType == FloorType.Kill)
-            {
-                //===== ECB 으로 처리
-            }
-            //================= 평면, 오브젝트 충돌 처리
-
-            //Debug.Log($"Obstacle : {ObstacleGroup.CalculateEntityCount()}");
             var groundCollision = new ComputeObstacleCollision
             {
                 parameter = Parameter,
                 particleData = particleData,
 
                 collisions = obstacleTypeData,
-                collisionTransform = obstacleTransform
+                collisionTransform = obstacleTransform,
+
+                particleEntity = particleEntity,
+                ecb = collisionECB.AsParallelWriter()
             };
             JobHandle ObstacleCollisionHandle = groundCollision.Schedule(particleCount, 64, FloorCollisionHandle);
 
@@ -717,6 +618,11 @@ namespace FluidSimulate
                 hashMap.Dispose();
                 //particleIndices.Dispose();
                 cellOffsetTableNative.Dispose();
+
+                floorECB.Playback(EntityManager);
+                floorECB.Dispose();
+                //collisionECB.Playback(EntityManager);
+                //collisionECB.Dispose();
             }
         }
 
